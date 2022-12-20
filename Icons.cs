@@ -9,14 +9,33 @@ public static class Icons
     {
         new()
         {
+            IconPickerIndex = IconPickerIndex.Experience,
+            DefaultIcon = MapIconsIndex.QuestObject,
+            BaseEntityMetadataSubstrings =
+            {
+                "ExpeditionRelicModifierExperience_1",
+                "ExpeditionRelicModifierExperience_2",
+                "ExpeditionRelicModifierExperience_3",
+                "ExpeditionRelicModifierExperience_4"
+            },
+        },
+        new()
+        {
+            IconPickerIndex = IconPickerIndex.Rarity,
+            DefaultIcon = MapIconsIndex.RewardUniques,
+            BaseEntityMetadataSubstrings =
+            {
+                "ExpeditionRelicModifierItemRarityMonster____"
+            },
+        },
+        new()
+        {
             IconPickerIndex = IconPickerIndex.Legion,
             DefaultIcon = MapIconsIndex.LegionGeneric,
             BaseEntityMetadataSubstrings =
             {
                 "ExpeditionRelicModifierLegionSplintersElite",
-                "ExpeditionRelicModifierEternalEmpireLegionElite",
-                "ExpeditionRelicModifierLegionSplintersChest",
-                "ExpeditionRelicModifierEternalEmpireLegionChest"
+                "ExpeditionRelicModifierEternalEmpireLegionElite"
             },
         },
         new()
@@ -26,11 +45,10 @@ public static class Icons
             BaseEntityMetadataSubstrings =
             {
                 "ExpeditionRelicModifierExpeditionUniqueElite",
-                "ExpeditionRelicModifierLostMenUniqueElite",
-                "ExpeditionRelicModifierExpeditionUniqueChest",
-                "ExpeditionRelicModifierLostMenUniqueChest"
+                "ExpeditionRelicModifierLostMenUniqueElite"
             },
         },
+
         new()
         {
             IconPickerIndex = IconPickerIndex.Essences,
@@ -38,11 +56,10 @@ public static class Icons
             BaseEntityMetadataSubstrings =
             {
                 "ExpeditionRelicModifierEssencesElite",
-                "ExpeditionRelicModifierLostMenEssenceElite",
-                "ExpeditionRelicModifierLostMenEssenceChest",
-                "ExpeditionRelicModifierEssencesChest"
+                "ExpeditionRelicModifierLostMenEssenceElite"
             },
         },
+        
         new()
         {
             IconPickerIndex = IconPickerIndex.VaalGems,
@@ -50,51 +67,50 @@ public static class Icons
             BaseEntityMetadataSubstrings =
             {
                 "ExpeditionRelicModifierVaalGemsElite",
-                "ExpeditionRelicModifierExpeditionGemsElite",
-                "ExpeditionRelicModifierVaalGemsChest",
-                "ExpeditionRelicModifierExpeditionGemsChest"
+                "ExpeditionRelicModifierExpeditionGemsElite"
             },
         },
+        
         new()
         {
             IconPickerIndex = IconPickerIndex.Logbooks,
             DefaultIcon = MapIconsIndex.QuestItem,
             BaseEntityMetadataSubstrings =
             {
-                "ExpeditionRelicModifierExpeditionLogbookQuantityChest",
                 "ExpeditionRelicModifierExpeditionLogbookQuantityMonster"
             },
         },
+        
         new()
         {
             IconPickerIndex = IconPickerIndex.Jewellery,
             DefaultIcon = MapIconsIndex.RewardJewellery,
             BaseEntityMetadataSubstrings =
             {
-                "ExpeditionRelicModifierExpeditionRareTrinketElite",
-                "ExpeditionRelicModifierExpeditionRareTrinketChest"
+                "ExpeditionRelicModifierExpeditionRareTrinketElite"
             },
         },
+        
         new()
         {
             IconPickerIndex = IconPickerIndex.Enchants,
             DefaultIcon = MapIconsIndex.LabyrinthEnchant,
             BaseEntityMetadataSubstrings =
-            {
-                "ExpeditionRelicModifierEternalEmpireEnchantElite",
-                "ExpeditionRelicModifierEternalEmpireEnchantChest"
+            { 
+                "ExpeditionRelicModifierEternalEmpireEnchantElite" 
             },
         },
+        
         new()
         {
             IconPickerIndex = IconPickerIndex.Scarabs,
             DefaultIcon = MapIconsIndex.RewardScarabs,
             BaseEntityMetadataSubstrings =
             {
-                "ExpeditionRelicModifierSirensScarabElite",
-                "ExpeditionRelicModifierSirensScarabChest"
+                "ExpeditionRelicModifierSirensScarabElite"
             },
         },
+        
         new()
         {
             IconPickerIndex = IconPickerIndex.Breach,
@@ -102,51 +118,68 @@ public static class Icons
             BaseEntityMetadataSubstrings =
             {
                 "ExpeditionRelicModifierBreachSplintersElite",
-                "ExpeditionRelicModifierSirensBreachElite",
-                "ExpeditionRelicModifierBreachSplintersChest",
-                "ExpeditionRelicModifierSirensBreachChest"
+                "ExpeditionRelicModifierSirensBreachElite"
             },
         },
+        
         new()
         {
             IconPickerIndex = IconPickerIndex.Influenced,
             DefaultIcon = MapIconsIndex.LootFilterLargeYellowCross,
             BaseEntityMetadataSubstrings =
             {
-                "ExpeditionRelicModifierExpeditionInfluencedItemsElite",
-                "ExpeditionRelicModifierExpeditionInfluencedItemsChest"
+                "ExpeditionRelicModifierExpeditionInfluencedItemsElite"
             },
         },
+        
         new()
         {
             IconPickerIndex = IconPickerIndex.Maps,
             DefaultIcon = MapIconsIndex.RewardMaps,
             BaseEntityMetadataSubstrings =
             {
-                "ExpeditionRelicModifierExpeditionMapsElite",
-                "ExpeditionRelicModifierExpeditionMapsChest"
+                "ExpeditionRelicModifierExpeditionMapsElite"
             },
         },
+        
         new()
         {
             IconPickerIndex = IconPickerIndex.Fractured,
             DefaultIcon = MapIconsIndex.LootFilterLargeBlueDiamond,
             BaseEntityMetadataSubstrings =
             {
-                "ExpeditionRelicModifierExpeditionFracturedItemsElite",
-                "ExpeditionRelicModifierExpeditionFracturedItemsChest"
+                "ExpeditionRelicModifierExpeditionFracturedItemsElite"
             },
         },
+        
         new()
         {
             IconPickerIndex = IconPickerIndex.Harbinger,
             DefaultIcon = MapIconsIndex.RewardHarbinger,
             BaseEntityMetadataSubstrings =
             {
-                "ExpeditionRelicModifierHarbingerCurrencyElite",
-                "ExpeditionRelicModifierHarbingerCurrencyChest"
+                "ExpeditionRelicModifierHarbingerCurrencyElite"
             },
         },
+        new()
+        {
+            IconPickerIndex = IconPickerIndex.Weapon,
+            DefaultIcon = MapIconsIndex.RewardWeapons,
+            BaseEntityMetadataSubstrings =
+            {
+                "ExpeditionRelicModifierExpeditionRareWeaponElite"
+            },
+        },
+        new()
+        {
+            IconPickerIndex = IconPickerIndex.Armour,
+            DefaultIcon = MapIconsIndex.RewardArmour,
+            BaseEntityMetadataSubstrings =
+            {
+                "ExpeditionRelicModifierExpeditionRareArmourElite_"
+            },
+        },
+
         new()
         {
             IconPickerIndex = IconPickerIndex.MonsterMods,
@@ -154,7 +187,8 @@ public static class Icons
             BaseEntityMetadataSubstrings =
             {
                 "ExpeditionRelicModifierPackSize",
-                "ExpeditionRelicModifierRareMonsterChance"
+                "ExpeditionRelicModifierRareMonsterChance",
+                "ExpeditionRelicModifierMagicMonsterChance"
             },
         },
         new()
@@ -172,10 +206,10 @@ public static class Icons
             DefaultIcon = MapIconsIndex.LootFilterLargePurpleSquare,
             BaseEntityMetadataSubstrings =
             {
-                "ExpeditionRelicModifierExpeditionCurrencyQuantityChest",
                 "ExpeditionRelicModifierExpeditionCurrencyQuantityMonster"
             },
         },
+        
         new()
         {
             IconPickerIndex = IconPickerIndex.Rerolls,
@@ -191,28 +225,212 @@ public static class Icons
             DefaultIcon = MapIconsIndex.RewardGenericItems,
             BaseEntityMetadataSubstrings =
             {
-                "ExpeditionRelicModifierItemQuantityChest",
                 "ExpeditionRelicModifierItemQuantityMonster"
             },
         },
+        
         new()
         {
             IconPickerIndex = IconPickerIndex.Currency,
             DefaultIcon = MapIconsIndex.RewardCurrency,
             BaseEntityMetadataSubstrings =
             {
-                "ExpeditionRelicModifierExpeditionBasicCurrencyChest",
                 "ExpeditionRelicModifierExpeditionBasicCurrencyElite"
             },
         },
+        
         new()
         {
             IconPickerIndex = IconPickerIndex.StackedDecks,
             DefaultIcon = MapIconsIndex.RewardDivinationCards,
             BaseEntityMetadataSubstrings =
             {
-                "ExpeditionRelicModifierStackedDeckChest",
                 "ExpeditionRelicModifierStackedDeckElite"
+            },
+        },
+        new()
+        {
+            IconPickerIndex = IconPickerIndex.RarityExcavatedChest,
+            DefaultIcon = MapIconsIndex.RewardUniques,
+            BaseEntityMetadataSubstrings =
+            {
+                "ExpeditionRelicModifierItemRarityChest"
+            },
+        },
+        new()
+        {
+            IconPickerIndex = IconPickerIndex.LegionExcavatedChest,
+            DefaultIcon = MapIconsIndex.LegionGeneric,
+            BaseEntityMetadataSubstrings =
+            {
+                "ExpeditionRelicModifierLegionSplintersChest",
+                "ExpeditionRelicModifierEternalEmpireLegionChest"
+            },
+        },
+        new()
+        {
+            IconPickerIndex = IconPickerIndex.UniquesExcavatedChest,
+            DefaultIcon = MapIconsIndex.RewardUniques,
+            BaseEntityMetadataSubstrings =
+            {
+                "ExpeditionRelicModifierExpeditionUniqueChest",
+                "ExpeditionRelicModifierLostMenUniqueChest"
+            },
+        },
+        new()
+        {
+            IconPickerIndex = IconPickerIndex.EssencesExcavatedChest,
+            DefaultIcon = MapIconsIndex.RewardEssences,
+            BaseEntityMetadataSubstrings =
+            {
+                "ExpeditionRelicModifierLostMenEssenceChest",
+                "ExpeditionRelicModifierEssencesChest"
+            },
+        },
+        new()
+        {
+            IconPickerIndex = IconPickerIndex.VaalGemsExcavatedChest,
+            DefaultIcon = MapIconsIndex.RewardGems,
+            BaseEntityMetadataSubstrings =
+            {
+                "ExpeditionRelicModifierVaalGemsChest",
+                "ExpeditionRelicModifierExpeditionGemsChest"
+            },
+        },
+        new()
+        {
+            IconPickerIndex = IconPickerIndex.LogbooksExcavatedChest,
+            DefaultIcon = MapIconsIndex.QuestItem,
+            BaseEntityMetadataSubstrings =
+            {
+                "ExpeditionRelicModifierExpeditionLogbookQuantityChest"
+            },
+        },
+        new()
+        {
+            IconPickerIndex = IconPickerIndex.JewelleryExcavatedChest,
+            DefaultIcon = MapIconsIndex.RewardJewellery,
+            BaseEntityMetadataSubstrings =
+            {
+                "ExpeditionRelicModifierExpeditionRareTrinketChest"
+            },
+        },
+        new()
+        {
+            IconPickerIndex = IconPickerIndex.EnchantsExcavatedChest,
+            DefaultIcon = MapIconsIndex.LabyrinthEnchant,
+            BaseEntityMetadataSubstrings =
+            {
+                "ExpeditionRelicModifierEternalEmpireEnchantChest"
+            },
+        },
+        new()
+        {
+            IconPickerIndex = IconPickerIndex.ScarabsExcavatedChest,
+            DefaultIcon = MapIconsIndex.RewardScarabs,
+            BaseEntityMetadataSubstrings =
+            {
+                "ExpeditionRelicModifierSirensScarabChest"
+            },
+        },
+        new()
+        {
+            IconPickerIndex = IconPickerIndex.BreachExcavatedChest,
+            DefaultIcon = MapIconsIndex.RewardBreach,
+            BaseEntityMetadataSubstrings =
+            {
+                "ExpeditionRelicModifierBreachSplintersChest",
+                "ExpeditionRelicModifierSirensBreachChest"
+            },
+        },
+        new()
+        {
+            IconPickerIndex = IconPickerIndex.InfluencedExcavatedChest,
+            DefaultIcon = MapIconsIndex.LootFilterLargeYellowCross,
+            BaseEntityMetadataSubstrings =
+            {
+                "ExpeditionRelicModifierExpeditionInfluencedItemsChest"
+            },
+        },
+        new()
+        {
+            IconPickerIndex = IconPickerIndex.MapsExcavatedChest,
+            DefaultIcon = MapIconsIndex.RewardMaps,
+            BaseEntityMetadataSubstrings =
+            {
+                "ExpeditionRelicModifierExpeditionMapsChest"
+            },
+        },
+        new()
+        {
+            IconPickerIndex = IconPickerIndex.FracturedExcavatedChest,
+            DefaultIcon = MapIconsIndex.LootFilterLargeBlueDiamond,
+            BaseEntityMetadataSubstrings =
+            {
+                "ExpeditionRelicModifierExpeditionFracturedItemsChest"
+            },
+        },
+        new()
+        {
+            IconPickerIndex = IconPickerIndex.HarbingerExcavatedChest,
+            DefaultIcon = MapIconsIndex.RewardHarbinger,
+            BaseEntityMetadataSubstrings =
+            {
+                "ExpeditionRelicModifierHarbingerCurrencyChest"
+            },
+        },
+        new()
+        {
+            IconPickerIndex = IconPickerIndex.ArtifactsExcavatedChest,
+            DefaultIcon = MapIconsIndex.LootFilterLargePurpleSquare,
+            BaseEntityMetadataSubstrings =
+            {
+                "ExpeditionRelicModifierExpeditionCurrencyQuantityChest"
+            },
+        },
+        new()
+        {
+            IconPickerIndex = IconPickerIndex.QuantityExcavatedChest,
+            DefaultIcon = MapIconsIndex.RewardGenericItems,
+            BaseEntityMetadataSubstrings =
+            {
+                "ExpeditionRelicModifierItemQuantityChest"
+            },
+        },
+        new()
+        {
+            IconPickerIndex = IconPickerIndex.CurrencyExcavatedChest,
+            DefaultIcon = MapIconsIndex.RewardCurrency,
+            BaseEntityMetadataSubstrings =
+            {
+                "ExpeditionRelicModifierExpeditionBasicCurrencyChest"
+            },
+        },
+        new()
+        {
+            IconPickerIndex = IconPickerIndex.StackedDecksExcavatedChest,
+            DefaultIcon = MapIconsIndex.RewardDivinationCards,
+            BaseEntityMetadataSubstrings =
+            {
+                "ExpeditionRelicModifierStackedDeckChest"
+            },
+        },
+        new()
+        {
+            IconPickerIndex = IconPickerIndex.WeaponExcavatedChest,
+            DefaultIcon = MapIconsIndex.RewardWeapons,
+            BaseEntityMetadataSubstrings =
+            {
+                "ExpeditionRelicModifierExpeditionRareWeaponChest__"
+            },
+        },
+        new()
+        {
+            IconPickerIndex = IconPickerIndex.ArmourExcavatedChest,
+            DefaultIcon = MapIconsIndex.RewardArmour,
+            BaseEntityMetadataSubstrings =
+            {
+                "ExpeditionRelicModifierExpeditionRareArmourChest_"
             },
         },
     };
