@@ -68,10 +68,26 @@ public class PathPlanner
 
     private static Vector2 GetNextMaybeInvalidPosition(Vector2 position, float radius)
     {
-        var length = Random.Shared.Next(2) == 0 ? radius : GetWeightedLength(radius);
+        radius = Math.Max(1, radius);
+        var length = Math.Max(1, Random.Shared.Next(2) == 0 ? radius : GetWeightedLength(radius));
         var angle = Random.Shared.NextSingle() * MathF.PI * 2;
         var (sin, cos) = MathF.SinCos(angle);
-        return position + new Vector2(cos * length, sin * length);
+        var rawPoint = position + new Vector2(cos * length, sin * length);
+        var roundedPoint = RoundPoint(rawPoint);
+        while (!roundedPoint.DistanceLessThanOrEqual(position, radius))
+        {
+            var diff = roundedPoint - position;
+            var maxDiffComponent = Math.Abs(diff.X) > Math.Abs(diff.Y) 
+                ? new Vector2(Math.Sign(diff.X), 0) 
+                : new Vector2(0, Math.Sign(diff.Y));
+            roundedPoint -= maxDiffComponent;
+        }
+        return roundedPoint;
+    }
+
+    private static Vector2 RoundPoint(Vector2 rawPoint)
+    {
+        return new Vector2(MathF.Round(rawPoint.X), MathF.Round(rawPoint.Y));
     }
 
     private static float GetWeightedLength(float radius)
@@ -141,7 +157,7 @@ public class PathPlanner
         if (searchStartOffset == pathCount)
         {
             var injectionIndex = Random.Shared.Next(0, pathCount);
-            var midpoint = (path[injectionIndex] + path[injectionIndex + 1]) / 2;
+            var midpoint = RoundPoint((path[injectionIndex] + path[injectionIndex + 1]) / 2);
             if (IsValidPlacement(path[injectionIndex], environment, midpoint) &&
                 IsValidPlacement(midpoint, environment, path[injectionIndex + 1]))
             {
@@ -188,22 +204,6 @@ public class PathPlanner
         }
 
         return false;
-    }
-
-    private static List<Vector2> MergePaths(List<Vector2> path1, List<Vector2> path2)
-    {
-        if (path1.Count != path2.Count)
-        {
-            throw new Exception("Paths have different lengths");
-        }
-
-        var factor = Random.Shared.NextSingle();
-        return path1.Zip(path2).Select(x => x.First * factor + x.Second * (1 - factor)).ToList();
-    }
-
-    private static T RandomBiasedElement<T>(List<T> elements)
-    {
-        return elements[Math.Min(Random.Shared.Next(elements.Count), Random.Shared.Next(elements.Count))];
     }
 
     public IEnumerable<PathState> GetBestPathSeries(ExpeditionEnvironment environment)
@@ -257,19 +257,20 @@ public class PathPlanner
         var path = new List<Vector2>(environment.MaxExplosions);
         if (Random.Shared.Next(2) != 0 && environment.Relics.Any())
         {
+            var environmentExplosionRange = environment.ExplosionRange * 0.9f;
             var relic = environment.Relics[Random.Shared.Next(environment.Relics.Count)];
             var current = environment.StartingPoint;
             do
             {
                 var diff = relic.Item1 - current;
-                if (diff.Length() < environment.ExplosionRange)
+                if (diff.Length() < environmentExplosionRange)
                 {
-                    path.Add(relic.Item1);
+                    path.Add(RoundPoint(relic.Item1));
                 }
                 else
                 {
-                    current += diff * (environment.ExplosionRange / diff.Length());
-                    path.Add(current);
+                    current += diff * (environmentExplosionRange / diff.Length());
+                    path.Add(RoundPoint(current));
                 }
 
                 if (!IsValidPlacement(path.SkipLast(1).LastOrDefault(environment.StartingPoint), environment, path.Last()))
