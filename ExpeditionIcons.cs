@@ -47,17 +47,17 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
     private float _explosiveRadius;
     private float _explosiveRange;
     private PathPlannerRunner _plannerRunner;
-    private Vector2? _detonatorPos;
+    private (Vector2, float)? _detonatorPos;
     private bool _zoneCleared;
     private int[][] _pathfindingData;
     private Vector2i _areaDimensions;
 
     private Camera Camera => GameController.Game.IngameState.Camera;
 
-    private Vector2? DetonatorPos => _detonatorPos ??= RealDetonatorPos;
+    private (Vector2 Pos, float Rotation)? DetonatorPos => _detonatorPos ??= RealDetonatorPos;
 
-    private Vector2? RealDetonatorPos => DetonatorEntity is { } e
-        ? e.GridPosNum
+    private (Vector2, float)? RealDetonatorPos => DetonatorEntity is { } e
+        ? (e.GridPosNum, e.GetComponent<Positioned>().Rotation)
         : null;
 
     private Entity DetonatorEntity =>
@@ -196,7 +196,7 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
         };
         var detonatorPos = DetonatorPos;
         _playerGridPos = GameController.Player.GetComponent<Positioned>().WorldPosNum.WorldToGrid();
-        if (detonatorPos is { } dp && _playerGridPos.Distance(dp) < 90)
+        if (detonatorPos is { Pos: var dp } && _playerGridPos.Distance(dp) < 90)
         {
             _zoneCleared = DetonatorEntity?.IsTargetable != true;
             if (_zoneCleared)
@@ -243,10 +243,29 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
         return null;
     }
 
-    private ExpeditionEnvironment PlannerEnvironment => BuildEnvironment();
-    private ExpeditionEnvironment BuildEnvironment()
+    private (Vector2 Min, Vector2 Max)? GetExclusionRect()
     {
         if (DetonatorPos is not { } detonatorPos)
+        {
+            return null;
+        }
+
+        var negVec = new Vector2(-11.5f, -8.5f);
+        var posVec = new Vector2(10.5f, 23.5f);
+        var rotations = (int)Math.Round(detonatorPos.Rotation/(MathF.PI/2));
+        for (int i = 0; i < rotations; i++)
+        {
+            (negVec.X, negVec.Y, posVec.X, posVec.Y) = (-posVec.Y, negVec.X, -negVec.Y, posVec.X);
+        }
+
+        return (detonatorPos.Pos + negVec, detonatorPos.Pos + posVec);
+    }
+
+    private ExpeditionEnvironment PlannerEnvironment => BuildEnvironment();
+
+    private ExpeditionEnvironment BuildEnvironment()
+    {
+        if (DetonatorPos is not { Pos: var detonatorPos })
         {
             throw new Exception("Unable to plan a path: detonator position is unknown");
         }
@@ -345,7 +364,8 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
             _explosiveRadius / GridToWorldMultiplier,
             GameController.IngameState.IngameUi.ExpeditionDetonatorElement.RemainingExplosives + PlacedExplosiveCount,
             detonatorPos,
-            IsValidPlacement);
+            IsValidPlacement, 
+            GetExclusionRect() ?? default);
     }
 
     private bool IsValidPlacement(Vector2 x)
@@ -513,7 +533,7 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
 
         if (_plannerRunner?.CurrentBestPath is { Count: > 0 } path)
         {
-            var firstPoint = DetonatorPos ?? _playerGridPos;
+            var firstPoint = DetonatorPos?.Pos ?? _playerGridPos;
             var prevPoint = firstPoint;
             for (var i = 0; i < path.Count; i++)
             {

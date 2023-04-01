@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
 using ExileCore.Shared.Helpers;
@@ -60,6 +59,7 @@ public class PathPlanner
     private bool IsValidPlacement(Vector2 previousPosition, ExpeditionEnvironment environment, Vector2 position)
     {
         return previousPosition.DistanceLessThanOrEqual(position, environment.ExplosionRange) &&
+               Vector2.Clamp(position, environment.ExclusionArea.Min, environment.ExclusionArea.Max) != position &&
                Enumerable.Range(1, _validatedPoints)
                    .Select(i => i / (float)(_validatedPoints))
                    .Select(l => Vector2.Lerp(previousPosition, position, l))
@@ -295,7 +295,7 @@ public class PathPlanner
 public record PathState(List<Vector2> Points, double Score);
 
 public record ExpeditionEnvironment(List<(Vector2, IExpeditionRelic)> Relics, List<(Vector2, IExpeditionLoot)> Loot, float ExplosionRange, float ExplosionRadius,
-    int MaxExplosions, Vector2 StartingPoint, Func<Vector2, bool> IsValidPlacement);
+    int MaxExplosions, Vector2 StartingPoint, Func<Vector2, bool> IsValidPlacement, (Vector2 Min, Vector2 Max) ExclusionArea);
 
 public interface IExpeditionRelic
 {
