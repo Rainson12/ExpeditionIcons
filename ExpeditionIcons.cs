@@ -365,7 +365,8 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
             GameController.IngameState.IngameUi.ExpeditionDetonatorElement.RemainingExplosives + PlacedExplosiveCount,
             detonatorPos,
             IsValidPlacement, 
-            GetExclusionRect() ?? default);
+            GetExclusionRect() ?? default,
+            (GameController.IngameState.Data.MapStats?.GetValueOrDefault(GameStat.MapMinimapMainAreaRevealed) ?? 0) != 0);
     }
 
     private bool IsValidPlacement(Vector2 x)

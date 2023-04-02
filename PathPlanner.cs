@@ -247,7 +247,7 @@ public class PathPlanner
         {
             _lootValueTable[loot] = loot switch
             {
-                RunicMonster => _settings.RunicMonsterWeight,
+                RunicMonster => environment.IsLogbook ? _settings.RunicMonsterLogbookWeight : _settings.RunicMonsterWeight,
                 Chest { Type: var type } => _settings.ChestSettingsMap.GetValueOrDefault(type, new ChestSettings()).Weight,
                 NormalMonster => _settings.NormalMonsterWeight,
             };
@@ -295,7 +295,7 @@ public class PathPlanner
 public record PathState(List<Vector2> Points, double Score);
 
 public record ExpeditionEnvironment(List<(Vector2, IExpeditionRelic)> Relics, List<(Vector2, IExpeditionLoot)> Loot, float ExplosionRange, float ExplosionRadius,
-    int MaxExplosions, Vector2 StartingPoint, Func<Vector2, bool> IsValidPlacement, (Vector2 Min, Vector2 Max) ExclusionArea);
+    int MaxExplosions, Vector2 StartingPoint, Func<Vector2, bool> IsValidPlacement, (Vector2 Min, Vector2 Max) ExclusionArea, bool IsLogbook);
 
 public interface IExpeditionRelic
 {

@@ -324,6 +324,7 @@ public class PlannerSettings
     public RangeNode<int> PathGenerationSize { get; set; } = new RangeNode<int>(100, 1, 1000);
     public RangeNode<int> ValidatedIntermediatePoints { get; set; } = new RangeNode<int>(1, 0, 5);
     public RangeNode<float> RunicMonsterWeight { get; set; } = new RangeNode<float>(3, 0, 5);
+    public RangeNode<float> RunicMonsterLogbookWeight { get; set; } = new RangeNode<float>(3, 0, 5);
     public RangeNode<float> NormalMonsterWeight { get; set; } = new RangeNode<float>(0.2f, 0, 5);
 
     [Menu("Chest weight", 888, CollapsedByDefault = true)]
