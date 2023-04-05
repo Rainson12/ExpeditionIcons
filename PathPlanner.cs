@@ -6,14 +6,6 @@ using ExileCore.Shared.Helpers;
 
 namespace ExpeditionIcons;
 
-public static class Extensions
-{
-    public static bool DistanceLessThanOrEqual(this Vector2 v, Vector2 other, float distance)
-    {
-        return v.DistanceSquared(other) < distance * distance;
-    }
-}
-
 public class PathPlanner
 {
     private readonly Dictionary<object, double> _lootValueTable = new(ReferenceEqualityComparer.Instance);

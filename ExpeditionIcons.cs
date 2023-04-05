@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using ExileCore;
@@ -12,6 +13,7 @@ using ExileCore.Shared.Helpers;
 using ExileCore.Shared.Nodes;
 using GameOffsets.Native;
 using SharpDX;
+using Matrix3x2 = System.Numerics.Matrix3x2;
 using Vector2 = System.Numerics.Vector2;
 using Vector3 = System.Numerics.Vector3;
 
@@ -64,9 +66,19 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
         GameController.EntityListWrapper.ValidEntitiesByType[EntityType.IngameIcon]
             .FirstOrDefault(x => x.Path == "Metadata/MiscellaneousObjects/Expedition/ExpeditionDetonator");
 
-    private int PlacedExplosiveCount =>
-        GameController.EntityListWrapper.ValidEntitiesByType[EntityType.IngameIcon]
-            .Count(x => x.Path == "Metadata/MiscellaneousObjects/Expedition/ExpeditionExplosive");
+    private int PlacedExplosiveCount => ExpeditionInfo.PlacedExplosiveCount;
+    private Vector2i[] PlacedExplosives => ExpeditionInfo.PlacedExplosiveGridPositions;
+
+    private Vector2i? PlacementIndicatorPos =>
+        ExpeditionInfo.IsExplosivePlacementActive
+            ? GameController.EntityListWrapper.ValidEntitiesByType[EntityType.MiscellaneousObjects]
+                  .FirstOrDefault(x => x.Path == "Metadata/MiscellaneousObjects/Expedition/ExpeditionPlacementIndicator")?.GridPosNum.RoundToVector2I() ??
+              ExpeditionInfo.PlacementIndicatorGridPosition
+            : null;
+
+    private ExpeditionDetonatorInfo ExpeditionInfo => GameController.IngameState.IngameUi.ExpeditionDetonatorElement.Info;
+
+    private RectangleF LocalWindowRect => GameController.Window.GetWindowRectangleTimeCache with { Location = SharpDX.Vector2.Zero };
 
     public override bool Initialise()
     {
@@ -229,14 +241,10 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
         {
             if (GetEntityType(entity.Path) != ExpeditionEntityType.None)
             {
-                if (_cachedEntities.TryGetValue(entity.Id, out var oldValue))
-                {
-                    _cachedEntities[entity.Id] = oldValue.Merge(BuildCacheItem(entity));
-                }
-                else
-                {
-                    _cachedEntities[entity.Id] = BuildCacheItem(entity);
-                }
+                var newValue = BuildCacheItem(entity);
+                _cachedEntities[entity.Id] = _cachedEntities.TryGetValue(entity.Id, out var oldValue)
+                    ? oldValue.Merge(newValue)
+                    : newValue;
             }
         }
 
@@ -362,7 +370,7 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
             loot.FindAll(x => x.Item2 != null),
             _explosiveRange / GridToWorldMultiplier,
             _explosiveRadius / GridToWorldMultiplier,
-            GameController.IngameState.IngameUi.ExpeditionDetonatorElement.RemainingExplosives + PlacedExplosiveCount,
+            ExpeditionInfo.TotalExplosiveCount,
             detonatorPos,
             IsValidPlacement, 
             GetExclusionRect() ?? default,
