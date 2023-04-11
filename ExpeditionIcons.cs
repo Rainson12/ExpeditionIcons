@@ -105,7 +105,7 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
     {
         _plannerRunner?.Stop();
         var plannerRunner = new PathPlannerRunner();
-        plannerRunner.Start(Settings.PlannerSettings, BuildEnvironment());
+        plannerRunner.Start(Settings.PlannerSettings, PlannerEnvironment);
         _plannerRunner = plannerRunner;
         Settings.PlannerSettings.SearchState = SearchState.Searching;
     }
@@ -244,6 +244,7 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
         return null;
     }
 
+    private ExpeditionEnvironment PlannerEnvironment => BuildEnvironment();
     private ExpeditionEnvironment BuildEnvironment()
     {
         if (DetonatorPos is not { } detonatorPos)
@@ -273,7 +274,7 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
                                     icon.BaseEntityMetadataSubstrings.Any(a.Contains)));
                             if (iconDescription != null)
                             {
-                                loot.Add((e.GridPos, new OtherChest()));
+                                loot.Add((e.GridPos, new Chest(iconDescription.IconPickerIndex)));
                             }
                         }
                     }
@@ -320,7 +321,7 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
 
                     for (int i = 0; i < Settings.PlannerSettings.LogbookCaveArtifactChestMultiplier; i++)
                     {
-                        loot.Add((e.GridPos, new ArtifactChest()));
+                        loot.Add((e.GridPos, new Chest(IconPickerIndex.LeagueChest)));
                     }
 
                     break;
@@ -416,8 +417,7 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
                         else
                         {
                             var iconDescription = _metadataIconMapping.GetOrAdd(animatedMetaData,
-                                a =>
-                                    Icons.LogbookChestIcons.FirstOrDefault(icon =>
+                                a => Icons.LogbookChestIcons.FirstOrDefault(icon =>
                                         icon.BaseEntityMetadataSubstrings.Any(a.Contains)));
                             if (iconDescription != null)
                             {

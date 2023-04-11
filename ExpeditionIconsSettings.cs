@@ -25,7 +25,7 @@ public class ExpeditionIconsSettings : ISettings
     private string _iconFilter = "";
     public int IconPickerSize = 20;
     public int IconsPerRow = 15;
-    public Dictionary<IconPickerIndex, IconDisplaySettings> IconMapping = new Dictionary<IconPickerIndex, IconDisplaySettings>();
+    public Dictionary<IconPickerIndex, IconDisplaySettings> IconMapping = new();
 
     public ExpeditionIconsSettings()
     {
@@ -263,6 +263,30 @@ public class ExpeditionIconsSettings : ISettings
 [Submenu]
 public class PlannerSettings
 {
+    public Dictionary<IconPickerIndex, ChestSettings> ChestSettingsMap = new() { [IconPickerIndex.LeagueChest] = new ChestSettings { Weight = 2 } };
+
+    public PlannerSettings()
+    {
+        ChestWeightSettings = new CustomNode
+        {
+            DrawDelegate = () =>
+            {
+                foreach (var expeditionMarkerIconDescription in Icons.LogbookChestIcons)
+                {
+                    ImGui.PushID($"IconLine{expeditionMarkerIconDescription.IconPickerIndex}");
+                    var chestSettings = ChestSettingsMap.GetValueOrDefault(
+                        expeditionMarkerIconDescription.IconPickerIndex, new ChestSettings());
+                    if (ImGui.SliderFloat($"{expeditionMarkerIconDescription.IconPickerIndex} weight", ref chestSettings.Weight, 0, 5))
+                    {
+                        ChestSettingsMap[expeditionMarkerIconDescription.IconPickerIndex] = chestSettings;
+                    }
+
+                    ImGui.PopID();
+                }
+            }
+        };
+    }
+
     public HotkeyNode StartSearchHotkey { get; set; } = new HotkeyNode(Keys.F13);
     public HotkeyNode StopSearchHotkey { get; set; } = new HotkeyNode(Keys.F13);
     public HotkeyNode ClearSearchHotkey { get; set; } = new HotkeyNode(Keys.F13);
@@ -301,8 +325,15 @@ public class PlannerSettings
     public RangeNode<int> ValidatedIntermediatePoints { get; set; } = new RangeNode<int>(1, 0, 5);
     public RangeNode<float> RunicMonsterWeight { get; set; } = new RangeNode<float>(3, 0, 5);
     public RangeNode<float> NormalMonsterWeight { get; set; } = new RangeNode<float>(0.2f, 0, 5);
-    public RangeNode<float> ArtifactChestWeight { get; set; } = new RangeNode<float>(2, 0, 5);
-    public RangeNode<float> OtherChestWeight { get; set; } = new RangeNode<float>(1, 0, 5);
+
+    [Menu("Chest weight", 888, CollapsedByDefault = true)]
+    [JsonIgnore]
+    public EmptyNode SettingsEmptyGood { get; set; } 
+
+    [JsonIgnore]
+    [Menu(null, parentIndex = 888)]
+    public CustomNode ChestWeightSettings { get; set; }
+
     public RangeNode<int> LogbookCaveRunicMonsterMultiplier { get; set; } = new RangeNode<int>(3, 0, 10);
     public RangeNode<int> LogbookCaveArtifactChestMultiplier { get; set; } = new RangeNode<int>(3, 0, 10);
     public RangeNode<int> LogbookBossRunicMonsterMultiplier { get; set; } = new RangeNode<int>(10, 0, 20);

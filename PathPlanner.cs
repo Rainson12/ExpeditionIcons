@@ -248,8 +248,7 @@ public class PathPlanner
             _lootValueTable[loot] = loot switch
             {
                 RunicMonster => _settings.RunicMonsterWeight,
-                ArtifactChest => _settings.ArtifactChestWeight,
-                OtherChest => _settings.OtherChestWeight,
+                Chest { Type: var type } => _settings.ChestSettingsMap.GetValueOrDefault(type, new ChestSettings()).Weight,
                 NormalMonster => _settings.NormalMonsterWeight,
             };
             _lootValueTable.TrimExcess();
@@ -358,7 +357,7 @@ public class IncreasedChestArtifactsRelic : IExpeditionRelic
 {
     public (double, double) GetScoreMultiplier(IExpeditionLoot loot)
     {
-        if (loot is ArtifactChest)
+        if (loot is Chest { Type: IconPickerIndex.LeagueChest })
         {
             return (1, 0.4);
         }
@@ -512,10 +511,12 @@ public class NormalMonster : IMonster
 {
 }
 
-public class ArtifactChest : IChest
+public class Chest : IChest
 {
-}
+    public Chest(IconPickerIndex type)
+    {
+        Type = type;
+    }
 
-public class OtherChest : IChest
-{
+    public IconPickerIndex Type { get; }
 }
