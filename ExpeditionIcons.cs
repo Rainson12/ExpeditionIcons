@@ -13,8 +13,8 @@ using ExileCore.Shared.Enums;
 using ExileCore.Shared.Helpers;
 using ExileCore.Shared.Nodes;
 using GameOffsets.Native;
-using ImGuiNET;
 using SharpDX;
+using Matrix3x2 = System.Numerics.Matrix3x2;
 using Vector2 = System.Numerics.Vector2;
 using Vector3 = System.Numerics.Vector3;
 
@@ -50,7 +50,7 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
     private float _explosiveRadius;
     private float _explosiveRange;
     private PathPlannerRunner _plannerRunner;
-    private Vector2? _detonatorPos;
+    private (Vector2, float)? _detonatorPos;
     private bool _zoneCleared;
     private int[][] _pathfindingData;
     private Vector2i _areaDimensions;
@@ -59,19 +59,29 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
 
     private Camera Camera => GameController.Game.IngameState.Camera;
 
-    private Vector2? DetonatorPos => _detonatorPos ??= RealDetonatorPos;
+    private (Vector2 Pos, float Rotation)? DetonatorPos => _detonatorPos ??= RealDetonatorPos;
 
-    private Vector2? RealDetonatorPos => DetonatorEntity is { } e
-        ? e.GridPosNum
+    private (Vector2, float)? RealDetonatorPos => DetonatorEntity is { } e
+        ? (e.GridPosNum, e.GetComponent<Positioned>().Rotation)
         : null;
 
     private Entity DetonatorEntity =>
         GameController.EntityListWrapper.ValidEntitiesByType[EntityType.IngameIcon]
             .FirstOrDefault(x => x.Path == "Metadata/MiscellaneousObjects/Expedition/ExpeditionDetonator");
 
-    private int PlacedExplosiveCount =>
-        GameController.EntityListWrapper.ValidEntitiesByType[EntityType.IngameIcon]
-            .Count(x => x.Path == "Metadata/MiscellaneousObjects/Expedition/ExpeditionExplosive");
+    private int PlacedExplosiveCount => ExpeditionInfo.PlacedExplosiveCount;
+    private Vector2i[] PlacedExplosives => ExpeditionInfo.PlacedExplosiveGridPositions;
+
+    private Vector2i? PlacementIndicatorPos =>
+        ExpeditionInfo.IsExplosivePlacementActive
+            ? GameController.EntityListWrapper.ValidEntitiesByType[EntityType.MiscellaneousObjects]
+                  .FirstOrDefault(x => x.Path == "Metadata/MiscellaneousObjects/Expedition/ExpeditionPlacementIndicator")?.GridPosNum.RoundToVector2I() ??
+              ExpeditionInfo.PlacementIndicatorGridPosition
+            : null;
+
+    private ExpeditionDetonatorInfo ExpeditionInfo => GameController.IngameState.IngameUi.ExpeditionDetonatorElement.Info;
+
+    private RectangleF LocalWindowRect => GameController.Window.GetWindowRectangleTimeCache with { Location = SharpDX.Vector2.Zero };
 
     public override bool Initialise()
     {
@@ -111,7 +121,7 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
     {
         _plannerRunner?.Stop();
         var plannerRunner = new PathPlannerRunner();
-        plannerRunner.Start(Settings.PlannerSettings, BuildEnvironment());
+        plannerRunner.Start(Settings.PlannerSettings, PlannerEnvironment);
         _plannerRunner = plannerRunner;
         Settings.PlannerSettings.SearchState = SearchState.Searching;
         PlannerStopwatch.Start();
@@ -212,7 +222,7 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
         }
         var detonatorPos = DetonatorPos;
         _playerGridPos = GameController.Player.GetComponent<Positioned>().WorldPosNum.WorldToGrid();
-        if (detonatorPos is { } dp && _playerGridPos.Distance(dp) < 90)
+        if (detonatorPos is { Pos: var dp } && _playerGridPos.Distance(dp) < 90)
         {
             _zoneCleared = DetonatorEntity?.IsTargetable != true;
             if (_zoneCleared)
@@ -245,23 +255,39 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
         {
             if (GetEntityType(entity.Path) != ExpeditionEntityType.None)
             {
-                if (_cachedEntities.TryGetValue(entity.Id, out var oldValue))
-                {
-                    _cachedEntities[entity.Id] = oldValue.Merge(BuildCacheItem(entity));
-                }
-                else
-                {
-                    _cachedEntities[entity.Id] = BuildCacheItem(entity);
-                }
+                var newValue = BuildCacheItem(entity);
+                _cachedEntities[entity.Id] = _cachedEntities.TryGetValue(entity.Id, out var oldValue)
+                    ? oldValue.Merge(newValue)
+                    : newValue;
             }
         }
 
         return null;
     }
 
-    private ExpeditionEnvironment BuildEnvironment()
+    private (Vector2 Min, Vector2 Max)? GetExclusionRect()
     {
         if (DetonatorPos is not { } detonatorPos)
+        {
+            return null;
+        }
+
+        var negVec = new Vector2(-11.5f, -8.5f);
+        var posVec = new Vector2(10.5f, 23.5f);
+        var rotations = (int)Math.Round(detonatorPos.Rotation/(MathF.PI/2));
+        for (int i = 0; i < rotations; i++)
+        {
+            (negVec.X, negVec.Y, posVec.X, posVec.Y) = (-posVec.Y, negVec.X, -negVec.Y, posVec.X);
+        }
+
+        return (detonatorPos.Pos + negVec, detonatorPos.Pos + posVec);
+    }
+
+    private ExpeditionEnvironment PlannerEnvironment => BuildEnvironment();
+
+    private ExpeditionEnvironment BuildEnvironment()
+    {
+        if (DetonatorPos is not { Pos: var detonatorPos })
         {
             throw new Exception("Unable to plan a path: detonator position is unknown");
         }
@@ -288,7 +314,7 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
                                     icon.BaseEntityMetadataSubstrings.Any(a.Contains)));
                             if (iconDescription != null)
                             {
-                                loot.Add((e.GridPos, new OtherChest()));
+                                loot.Add((e.GridPos, new Chest(iconDescription.IconPickerIndex)));
                             }
                         }
                     }
@@ -335,7 +361,7 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
 
                     for (int i = 0; i < Settings.PlannerSettings.LogbookCaveArtifactChestMultiplier; i++)
                     {
-                        loot.Add((e.GridPos, new ArtifactChest()));
+                        loot.Add((e.GridPos, new Chest(IconPickerIndex.LeagueChest)));
                     }
 
                     break;
@@ -358,9 +384,11 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
             loot.FindAll(x => x.Item2 != null),
             _explosiveRange / GridToWorldMultiplier,
             _explosiveRadius / GridToWorldMultiplier,
-            GameController.IngameState.IngameUi.ExpeditionDetonatorElement.RemainingExplosives + PlacedExplosiveCount,
+            ExpeditionInfo.TotalExplosiveCount,
             detonatorPos,
-            IsValidPlacement);
+            IsValidPlacement, 
+            GetExclusionRect() ?? default,
+            (GameController.IngameState.Data.MapStats?.GetValueOrDefault(GameStat.MapMinimapMainAreaRevealed) ?? 0) != 0);
     }
 
     private bool IsValidPlacement(Vector2 x)
@@ -431,8 +459,7 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
                         else
                         {
                             var iconDescription = _metadataIconMapping.GetOrAdd(animatedMetaData,
-                                a =>
-                                    Icons.LogbookChestIcons.FirstOrDefault(icon =>
+                                a => Icons.LogbookChestIcons.FirstOrDefault(icon =>
                                         icon.BaseEntityMetadataSubstrings.Any(a.Contains)));
                             if (iconDescription != null)
                             {
@@ -529,7 +556,7 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
 
         if (_plannerRunner?.CurrentBestPath is { Count: > 0 } path)
         {
-            var firstPoint = DetonatorPos ?? _playerGridPos;
+            var firstPoint = DetonatorPos?.Pos ?? _playerGridPos;
             var prevPoint = firstPoint;
             for (var i = 0; i < path.Count; i++)
             {
