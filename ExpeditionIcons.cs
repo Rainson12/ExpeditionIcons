@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using ExileCore;
@@ -14,7 +12,6 @@ using ExileCore.Shared.Helpers;
 using ExileCore.Shared.Nodes;
 using GameOffsets.Native;
 using SharpDX;
-using Matrix3x2 = System.Numerics.Matrix3x2;
 using Vector2 = System.Numerics.Vector2;
 using Vector3 = System.Numerics.Vector3;
 
@@ -54,8 +51,6 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
     private bool _zoneCleared;
     private int[][] _pathfindingData;
     private Vector2i _areaDimensions;
-    private Stopwatch PlannerStopwatch = new Stopwatch();
-    private SoundController sc;
 
     private Camera Camera => GameController.Game.IngameState.Camera;
 
@@ -85,7 +80,6 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
 
     public override bool Initialise()
     {
-        sc = GameController.SoundController;
         Graphics.InitImage(TextureName);
         Settings._iconsImageId = Graphics.GetTextureId(TextureName);
         Settings.PlannerSettings.StartSearch.OnPressed += StartSearch;
@@ -114,17 +108,15 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
         {
             Settings.PlannerSettings.SearchState = SearchState.Empty;
         }
-        PlannerStopwatch.Reset();
     }
 
     private void StartSearch()
     {
         _plannerRunner?.Stop();
         var plannerRunner = new PathPlannerRunner();
-        plannerRunner.Start(Settings.PlannerSettings, PlannerEnvironment);
+        plannerRunner.Start(Settings.PlannerSettings, PlannerEnvironment, GameController.SoundController);
         _plannerRunner = plannerRunner;
         Settings.PlannerSettings.SearchState = SearchState.Searching;
-        PlannerStopwatch.Start();
     }
 
     private void ClearSearch()
@@ -133,7 +125,6 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
         {
             run.Stop();
             _plannerRunner = null;
-            PlannerStopwatch.Reset();
         }
     }
 
@@ -213,13 +204,7 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
             { IsRunning: false, CurrentBestPath.Count: > 0 } => SearchState.Stopped,
             _ => SearchState.Empty
         };
-        if(PlannerStopwatch.IsRunning && 
-            PlannerStopwatch.ElapsedMilliseconds >= Settings.PlannerSettings.MaximumGenerationTimeSeconds.Value *1000) 
-        { 
-            PlannerStopwatch.Reset();
-            LogMessage("ExpeditionIcons PathPlanner finished.");
-            if(Settings.PlannerSettings.PlaySoundOnFinish.Value) sc.PlaySound("attention");
-        }
+
         var detonatorPos = DetonatorPos;
         _playerGridPos = GameController.Player.GetComponent<Positioned>().WorldPosNum.WorldToGrid();
         if (detonatorPos is { Pos: var dp } && _playerGridPos.Distance(dp) < 90)

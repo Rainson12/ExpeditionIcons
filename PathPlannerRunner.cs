@@ -19,7 +19,12 @@ public class PathPlannerRunner
 
     private Task _task;
 
-    public void Start(PlannerSettings settings, ExpeditionEnvironment environment)
+    public void Start(PlannerSettings settings, ExpeditionEnvironment environment, SoundController soundController)
+    {
+        _task = Run(settings, environment, soundController);
+    }
+
+    private async Task Run(PlannerSettings settings, ExpeditionEnvironment environment, SoundController soundController)
     {
         var threadCount = Math.Max(settings.SearchThreads.Value, 1);
         BestValues = new (List<Vector2> Path, double Score, int Iteration, double LastGenerationTime)[threadCount];
@@ -52,7 +57,18 @@ public class PathPlannerRunner
             }));
         }
 
-        _task = Task.WhenAll(tasks);
+        try
+        {
+            await Task.WhenAll(tasks);
+        }
+        finally
+        {
+            DebugWindow.LogMsg("ExpeditionIcons PathPlanner finished.");
+            if (settings.PlaySoundOnFinish)
+            {
+                soundController.PlaySound("attention");
+            }
+        }
     }
 
     public void Stop() => _cts.Cancel();

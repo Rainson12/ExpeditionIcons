@@ -302,7 +302,7 @@ public class PlannerSettings
     [JsonIgnore]
     [ConditionalDisplay(nameof(HasSearchResult))]
     public ButtonNode ClearSearch { get; set; } = new ButtonNode();
-    public ToggleNode PlaySoundOnFinish { get; set; } = new ToggleNode();
+    public ToggleNode PlaySoundOnFinish { get; set; } = new ToggleNode(false);
 
     [Menu("Color for suggested explosive radius")]
     public ColorNode ExplosiveColor { get; set; } = new ColorNode(Color.Purple);
