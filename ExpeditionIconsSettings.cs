@@ -263,7 +263,32 @@ public class ExpeditionIconsSettings : ISettings
 [Submenu]
 public class PlannerSettings
 {
-    public Dictionary<IconPickerIndex, ChestSettings> ChestSettingsMap = new() { [IconPickerIndex.LeagueChest] = new ChestSettings { Weight = 2 } };
+    public Dictionary<IconPickerIndex, ChestSettings> ChestSettingsMap = new()
+    {
+        [IconPickerIndex.LeagueChest] = new ChestSettings { Weight = 2 }
+    };
+
+    public Dictionary<IconPickerIndex, RelicSettings> RelicSettingsMap = new()
+    {
+        [IconPickerIndex.Logbooks] = new RelicSettings { Multiplier = 1.5f, },
+        [IconPickerIndex.LogbooksExcavatedChest] = new RelicSettings { Multiplier = 1.5f, },
+        [IconPickerIndex.Fractured] = new RelicSettings { Multiplier = 1.3f, },
+        [IconPickerIndex.FracturedExcavatedChest] = new RelicSettings { Multiplier = 1.3f, },
+        [IconPickerIndex.PackSize] = new RelicSettings { Multiplier = 1.25f, },
+        [IconPickerIndex.Scarabs] = new RelicSettings { Increase = 0.25f, },
+        [IconPickerIndex.ScarabsExcavatedChest] = new RelicSettings { Increase = 0.25f, },
+        [IconPickerIndex.Artifacts] = new RelicSettings { Increase = 0.4f, },
+        [IconPickerIndex.ArtifactsExcavatedChest] = new RelicSettings { Increase = 0.4f, },
+        [IconPickerIndex.Quantity] = new RelicSettings { Increase = 0.4f, },
+        [IconPickerIndex.QuantityExcavatedChest] = new RelicSettings { Increase = 0.4f, },
+        [IconPickerIndex.Currency] = new RelicSettings { Increase = 0.4f, },
+        [IconPickerIndex.CurrencyExcavatedChest] = new RelicSettings { Increase = 0.4f, },
+        [IconPickerIndex.StackedDecks] = new RelicSettings { Increase = 0.4f, },
+        [IconPickerIndex.StackedDecksExcavatedChest] = new RelicSettings { Increase = 0.4f, },
+        [IconPickerIndex.Rerolls] = new RelicSettings { Increase = 0.25f, },
+    };
+
+    public RelicSettings DefaultRelicSettings = RelicSettings.Default;
 
     public PlannerSettings()
     {
@@ -282,6 +307,62 @@ public class PlannerSettings
                     }
 
                     ImGui.PopID();
+                }
+            }
+        };
+        RelicWeightSettings = new CustomNode
+        {
+            DrawDelegate = () =>
+            {
+                if (ImGui.BeginTable("Relic Weight", 4, ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.Borders))
+                {
+                    ImGui.TableSetupColumn("Name");
+                    ImGui.TableSetupColumn("Multiplier", ImGuiTableColumnFlags.WidthFixed, 300);
+                    ImGui.TableSetupColumn("Increase", ImGuiTableColumnFlags.WidthFixed, 300);
+                    ImGui.TableHeadersRow();
+                    foreach (var expeditionMarkerIconDescription in Icons.ExpeditionRelicIcons)
+                    {
+                        ImGui.PushID($"Icon{expeditionMarkerIconDescription.IconPickerIndex}");
+                        ImGui.TableNextRow(ImGuiTableRowFlags.None);
+                        ImGui.TableNextColumn();
+                        ImGui.Text($"{expeditionMarkerIconDescription.IconPickerIndex}");
+                        var relicSettings = RelicSettingsMap.GetValueOrDefault(
+                            expeditionMarkerIconDescription.IconPickerIndex, RelicSettings.Default);
+
+                        ImGui.TableNextColumn();
+                        ImGui.SetNextItemWidth(300);
+                        if (ImGui.SliderFloat("##multiplier", ref relicSettings.Multiplier, 0, 5))
+                        {
+                            RelicSettingsMap[expeditionMarkerIconDescription.IconPickerIndex] = relicSettings;
+                        }
+
+                        ImGui.TableNextColumn();
+                        ImGui.SetNextItemWidth(300);
+                        if (ImGui.SliderFloat("##increase", ref relicSettings.Increase, 0, 5))
+                        {
+                            RelicSettingsMap[expeditionMarkerIconDescription.IconPickerIndex] = relicSettings;
+                        }
+                        ImGui.PopID();
+                    }
+
+                    {
+                        ImGui.PushID("OtherRelics");
+                        ImGui.TableNextRow(ImGuiTableRowFlags.None);
+                        ImGui.TableNextColumn();
+                        ImGui.Text("Other relics");
+                        var relicSettings = DefaultRelicSettings;
+
+                        ImGui.TableNextColumn();
+                        ImGui.SetNextItemWidth(300);
+                        ImGui.SliderFloat("##multiplier", ref relicSettings.Multiplier, 0, 5);
+
+                        ImGui.TableNextColumn();
+                        ImGui.SetNextItemWidth(300);
+                        ImGui.SliderFloat("##increase", ref relicSettings.Increase, 0, 5);
+                        ImGui.PopID();
+                    }
+
+                    ImGui.EndTable();
                 }
             }
         };
@@ -330,11 +411,19 @@ public class PlannerSettings
 
     [Menu("Chest weight", 888, CollapsedByDefault = true)]
     [JsonIgnore]
-    public EmptyNode SettingsEmptyGood { get; set; } 
+    public EmptyNode ChestWeightStub { get; set; } 
 
     [JsonIgnore]
     [Menu(null, parentIndex = 888)]
     public CustomNode ChestWeightSettings { get; set; }
+
+    [Menu("Relic weight modifiers", 999, CollapsedByDefault = true)]
+    [JsonIgnore]
+    public EmptyNode RelicWeightStub { get; set; }
+
+    [JsonIgnore]
+    [Menu(null, parentIndex = 999)]
+    public CustomNode RelicWeightSettings { get; set; }
 
     public RangeNode<int> LogbookCaveRunicMonsterMultiplier { get; set; } = new RangeNode<int>(3, 0, 10);
     public RangeNode<int> LogbookCaveArtifactChestMultiplier { get; set; } = new RangeNode<int>(3, 0, 10);
