@@ -36,6 +36,24 @@ public static class Icons
     {
         new()
         {
+            IconPickerIndex = IconPickerIndex.CorruptedItems,
+            DefaultIcon = MapIconsIndex.QuestObject,
+            BaseEntityMetadataSubstrings =
+            {
+                "ExpeditionRelicModifierExpeditionCorruptedItemsElite",
+            },
+        },
+        new()
+        {
+            IconPickerIndex = IconPickerIndex.FullyLinked,
+            DefaultIcon = MapIconsIndex.QuestObject,
+            BaseEntityMetadataSubstrings =
+            {
+                "ExpeditionRelicModifierExpeditionFullyLinkedElite__",
+            },
+        },
+        new()
+        {
             IconPickerIndex = IconPickerIndex.Experience,
             DefaultIcon = MapIconsIndex.QuestObject,
             BaseEntityMetadataSubstrings =

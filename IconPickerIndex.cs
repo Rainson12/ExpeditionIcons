@@ -29,6 +29,8 @@ public enum IconPickerIndex
     Quantity,
     Currency,
     StackedDecks,
+    FullyLinked,
+    CorruptedItems,
     RarityExcavatedChest,
     LegionExcavatedChest,
     UniquesExcavatedChest,
