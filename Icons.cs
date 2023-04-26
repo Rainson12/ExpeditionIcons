@@ -1,33 +1,23 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using ExileCore.Shared.Enums;
 
 namespace ExpeditionIcons;
 
 public static class Icons
 {
-    public static IExpeditionRelic GetRelicType(string relicMod)
+    public static IExpeditionRelic GetRelicType(string relicMod, PlannerSettings plannerSettings)
     {
-        return relicMod switch
+        var relicDescription = ExpeditionRelicIcons.FirstOrDefault(x => x.BaseEntityMetadataSubstrings.Contains(relicMod));
+        return (relicMod, relicDescription) switch
         {
-            "ExpeditionRelicModifierExpeditionLogbookQuantityChest" => new LogbookChestRelic(),
-            "ExpeditionRelicModifierExpeditionLogbookQuantityMonster" => new LogbookMonsterRelic(),
-            "ExpeditionRelicModifierSirensScarabElite" => new OtherGoodMonsterRelic(),
-            "ExpeditionRelicModifierSirensScarabChest" => new OtherGoodChestRelic(),
-            "ExpeditionRelicModifierExpeditionFracturedItemsElite" => new FracturedMonsterRelic(),
-            "ExpeditionRelicModifierExpeditionFracturedItemsChest" => new FracturedChestRelic(),
-            "ExpeditionRelicModifierPackSize" => new PackSizeMonsterRelic(),
-            "ExpeditionRelicModifierElitesDuplicated" => new DoubledMonstersRelic(),
-            "ExpeditionRelicModifierExpeditionCurrencyQuantityChest" => new IncreasedChestArtifactsRelic(),
-            "ExpeditionRelicModifierExpeditionCurrencyQuantityMonster" => new IncreasedMonsterArtifactsRelic(),
-            "ExpeditionRelicModifierExpeditionVendorCurrency" => new OtherGoodChestRelic(),
-            "ExpeditionRelicModifierItemQuantityChest" => new IncreasedChestLootRelic(),
-            "ExpeditionRelicModifierItemQuantityMonster" => new IncreasedMonsterLootRelic(),
-            "ExpeditionRelicModifierExpeditionBasicCurrencyChest" => new OtherGoodChestRelic(),
-            "ExpeditionRelicModifierExpeditionBasicCurrencyElite" => new OtherGoodMonsterRelic(),
-            "ExpeditionRelicModifierStackedDeckChest" => new OtherGoodChestRelic(),
-            "ExpeditionRelicModifierStackedDeckElite" => new OtherGoodMonsterRelic(),
-            _ when relicMod.Contains("Monster") => new OtherMonsterRelic(),
-            _ when relicMod.Contains("Chest") => new OtherChestRelic(),
+            ("ExpeditionRelicModifierElitesDuplicated", _) => new DoubledMonstersRelic(),
+            (_, { IsWeightCustomizable: true, IconPickerIndex: var index }) when
+                (plannerSettings.RelicSettingsMap.GetValueOrDefault(index) ?? RelicSettings.Default) is var setting =>
+                new ConfigurableRelic(setting.Multiplier, setting.Increase,
+                    relicMod.Contains("Monster") || relicMod.Contains("Elite") || relicMod.Contains("PackSize")),
+            _ when relicMod.Contains("Monster") => new ConfigurableRelic(plannerSettings.DefaultRelicSettings.Multiplier, plannerSettings.DefaultRelicSettings.Increase, true),
+            _ when relicMod.Contains("Chest") => new ConfigurableRelic(plannerSettings.DefaultRelicSettings.Multiplier, plannerSettings.DefaultRelicSettings.Increase, false),
             _ => null,
         };
     }
@@ -221,14 +211,21 @@ public static class Icons
                 "ExpeditionRelicModifierExpeditionRareArmourElite_",
             },
         },
-
+        new()
+        {
+            IconPickerIndex = IconPickerIndex.PackSize,
+            DefaultIcon = MapIconsIndex.LootFilterLargeGreenTriangle,
+            BaseEntityMetadataSubstrings =
+            {
+                "ExpeditionRelicModifierPackSize",
+            },
+        },
         new()
         {
             IconPickerIndex = IconPickerIndex.MonsterMods,
             DefaultIcon = MapIconsIndex.LootFilterLargeGreenTriangle,
             BaseEntityMetadataSubstrings =
             {
-                "ExpeditionRelicModifierPackSize",
                 "ExpeditionRelicModifierRareMonsterChance",
                 "ExpeditionRelicModifierMagicMonsterChance",
             },
@@ -241,6 +238,7 @@ public static class Icons
             {
                 "ExpeditionRelicModifierElitesDuplicated",
             },
+            IsWeightCustomizable = false,
         },
         new()
         {

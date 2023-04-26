@@ -307,180 +307,34 @@ public record DoubledMonstersRelic : IExpeditionRelic
     }
 }
 
-public class IncreasedMonsterLootRelic : IExpeditionRelic
-{
-    public (double, double) GetScoreMultiplier(IExpeditionLoot loot)
-    {
-        if (loot is IMonster)
-        {
-            return (1, 0.4);
-        }
-
-        return (1, 0);
-    }
-}
-
-public class IncreasedMonsterArtifactsRelic : IExpeditionRelic
-{
-    public (double, double) GetScoreMultiplier(IExpeditionLoot loot)
-    {
-        if (loot is IMonster)
-        {
-            return (1, 0.4);
-        }
-
-        return (1, 0);
-    }
-}
-
-public class IncreasedChestLootRelic : IExpeditionRelic
-{
-    public (double, double) GetScoreMultiplier(IExpeditionLoot loot)
-    {
-        if (loot is IChest)
-        {
-            return (1, 0.4);
-        }
-
-        return (1, 0);
-    }
-}
-
-public class IncreasedChestArtifactsRelic : IExpeditionRelic
-{
-    public (double, double) GetScoreMultiplier(IExpeditionLoot loot)
-    {
-        if (loot is Chest { Type: IconPickerIndex.LeagueChest })
-        {
-            return (1, 0.4);
-        }
-
-        return (1, 0);
-    }
-}
-
-public class OtherMonsterRelic : IExpeditionRelic
-{
-    public (double, double) GetScoreMultiplier(IExpeditionLoot loot)
-    {
-        if (loot is IMonster)
-        {
-            return (1, 0.15);
-        }
-
-        return (1, 0);
-    }
-}
-
-public class OtherChestRelic : IExpeditionRelic
-{
-    public (double, double) GetScoreMultiplier(IExpeditionLoot loot)
-    {
-        if (loot is IChest)
-        {
-            return (1, 0.15);
-        }
-
-        return (1, 0);
-    }
-}
-
-public class OtherGoodMonsterRelic : IExpeditionRelic
-{
-    public (double, double) GetScoreMultiplier(IExpeditionLoot loot)
-    {
-        if (loot is IMonster)
-        {
-            return (1, 0.25);
-        }
-
-        return (1, 0);
-    }
-}
-
-public class OtherGoodChestRelic : IExpeditionRelic
-{
-    public (double, double) GetScoreMultiplier(IExpeditionLoot loot)
-    {
-        if (loot is IChest)
-        {
-            return (1, 0.25);
-        }
-
-        return (1, 0);
-    }
-}
-
-public class LogbookMonsterRelic : IExpeditionRelic
-{
-    public (double, double) GetScoreMultiplier(IExpeditionLoot loot)
-    {
-        if (loot is IMonster)
-        {
-            return (1.5, 0);
-        }
-
-        return (1, 0);
-    }
-}
-
-public class LogbookChestRelic : IExpeditionRelic
-{
-    public (double, double) GetScoreMultiplier(IExpeditionLoot loot)
-    {
-        if (loot is IChest)
-        {
-            return (1.5, 0);
-        }
-
-        return (1, 0);
-    }
-}
-
-public class FracturedMonsterRelic : IExpeditionRelic
-{
-    public (double, double) GetScoreMultiplier(IExpeditionLoot loot)
-    {
-        if (loot is IMonster)
-        {
-            return (1.3, 0);
-        }
-
-        return (1, 0);
-    }
-}
-
-public class FracturedChestRelic : IExpeditionRelic
-{
-    public (double, double) GetScoreMultiplier(IExpeditionLoot loot)
-    {
-        if (loot is IChest)
-        {
-            return (1.3, 0);
-        }
-
-        return (1, 0);
-    }
-}
-
-public class PackSizeMonsterRelic : IExpeditionRelic
-{
-    public (double, double) GetScoreMultiplier(IExpeditionLoot loot)
-    {
-        if (loot is IMonster)
-        {
-            return (1.25, 0);
-        }
-
-        return (1, 0);
-    }
-}
-
 public record WarningRelic : IExpeditionRelic
 {
     public (double, double) GetScoreMultiplier(IExpeditionLoot loot)
     {
         return (0, 0);
+    }
+}
+
+public class ConfigurableRelic : IExpeditionRelic
+{
+    private readonly double _multiplier;
+    private readonly double _increase;
+    private readonly bool _isMonsterRelic;
+
+    public ConfigurableRelic(double multiplier, double increase, bool isMonsterRelic)
+    {
+        _multiplier = multiplier;
+        _increase = increase;
+        _isMonsterRelic = isMonsterRelic;
+    }
+
+    public (double, double) GetScoreMultiplier(IExpeditionLoot loot)
+    {
+        return (_isMonsterRelic, loot) switch
+        {
+            (true, IMonster) or (false, IChest) => (_multiplier, _increase),
+            _ => (1, 0),
+        };
     }
 }
 

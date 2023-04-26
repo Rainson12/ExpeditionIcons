@@ -331,7 +331,7 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
                     var fittingMods = mods
                         .SelectMany(mod => allSubStrings.Where(mod.Contains))
                         .Distinct()
-                        .Select(Icons.GetRelicType);
+                        .Select(x => Icons.GetRelicType(x, Settings.PlannerSettings));
                     relics.AddRange(fittingMods.Select(expeditionRelic => (e.GridPos, expeditionRelic)));
 
                     break;
