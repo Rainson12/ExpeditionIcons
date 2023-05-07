@@ -99,7 +99,7 @@ public class ExpeditionIconsSettings : ISettings
     [Menu("Warn for fire immune", parentIndex = 101)]
     public ToggleNode WarnFireImmune { get; set; } = new ToggleNode(false);
 
-    [Menu("Warn for ignite immune", parentIndex = 101)]
+    [Menu("Warn for ailment immune", parentIndex = 101)]
     public ToggleNode WarnIgniteImmune { get; set; } = new ToggleNode(false);
 
     [Menu("Warn for cold immune", parentIndex = 101)]
@@ -117,7 +117,7 @@ public class ExpeditionIconsSettings : ISettings
     [Menu("Warn for curse immune", parentIndex = 101)]
     public ToggleNode WarnCurseImmune { get; set; } = new ToggleNode(false);
 
-    [Menu("Warn for armor pen", parentIndex = 101)]
+    [Menu("Warn for armor pen (100% overwhelm)", parentIndex = 101)]
     public ToggleNode WarnArmorPen { get; set; } = new ToggleNode(false);
 
     [Menu("Warn for no flask", parentIndex = 101)]
@@ -143,6 +143,18 @@ public class ExpeditionIconsSettings : ISettings
 
     [Menu("Warn for monster resistances", parentIndex = 101)]
     public ToggleNode WarnMonsterResist { get; set; } = new ToggleNode(false);
+
+    [Menu("Warn for corrupted items", parentIndex = 101)]
+    public ToggleNode WarnCorrupted { get; set; } = new ToggleNode(false);
+
+    [Menu("Warn for \"always crit\"", parentIndex = 101)]
+    public ToggleNode WarnAlwaysCrit { get; set; } = new ToggleNode(false);
+
+    [Menu("Warn for reduced damage taken", parentIndex = 101)]
+    public ToggleNode WarnReducedDamageTaken { get; set; } = new ToggleNode(false);
+
+    [Menu("Warn for bleed", parentIndex = 101)]
+    public ToggleNode WarnBleed { get; set; } = new ToggleNode(false);
 
     [Menu("Chest settings", index = 103, CollapsedByDefault = true)]
     [JsonIgnore]
