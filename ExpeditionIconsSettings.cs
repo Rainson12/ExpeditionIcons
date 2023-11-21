@@ -196,20 +196,13 @@ public class ExpeditionIconsSettings : ISettings
                 ImGui.PushStyleColor(ImGuiCol.Button, ImGui.GetColorU32(ImGuiCol.WindowBg));
             }
 
-            ImGui.PushID(i.ToString());
-            try
+            var btnClicked = ImGui.ImageButton($"btn{i}", _iconsImageId, System.Numerics.Vector2.One * IconPickerSize,
+                rect.TopLeft.ToVector2Num(), rect.BottomRight.ToVector2Num(), Vector4.Zero, tintColor);
+            ImGui.PopStyleColor();
+            if (btnClicked)
             {
-                if (ImGui.ImageButton(_iconsImageId, System.Numerics.Vector2.One * IconPickerSize,
-                        rect.TopLeft.ToVector2Num(), rect.BottomRight.ToVector2Num(), -1, Vector4.Zero, tintColor))
-                {
-                    icon = testIcon;
-                    return true;
-                }
-            }
-            finally
-            {
-                ImGui.PopID();
-                ImGui.PopStyleColor();
+                icon = testIcon;
+                return true;
             }
 
             if ((i + 1) % IconsPerRow != 0)
@@ -239,7 +232,7 @@ public class ExpeditionIconsSettings : ISettings
         var uv1 = uv.BottomRight.ToVector2Num();
         ImGui.PushID(iconKey.ToString());
         var tintVector = (iconSettings.Tint ?? Color.White).ToImguiVec4();
-        var buttonClicked = ImGui.ImageButton(_iconsImageId, System.Numerics.Vector2.One * 15, uv0, uv1, -1, Vector4.Zero, tintVector);
+        var buttonClicked = ImGui.ImageButton("iconbtn", _iconsImageId, System.Numerics.Vector2.One * 15, uv0, uv1, Vector4.Zero, tintVector);
         ImGui.SameLine();
         if (ImGui.ColorEdit4("Tint", ref tintVector,
                 ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.NoInputs |
