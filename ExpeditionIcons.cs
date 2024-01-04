@@ -592,6 +592,8 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
                Settings.WarnReducedDamageTaken && mods.Any(x => x.Contains("ExpeditionRelicModifierReducedDamageTaken")) ||
                Settings.WarnBleed && mods.Any(x => x.Contains("ExpeditionRelicModifierBleedOnHitBleedDuration")) ||
                Settings.WarnCorrupted && mods.Any(x => x.Contains("ExpeditionRelicModifierExpeditionCorruptedItemsElite")) ||
+               Settings.WarnPoison && mods.Any(x => x.Contains("ExpeditionRelicModifierAllDamagePoisonsPoisonDuration")) ||
+               Settings.WarnPhysicalAsExtraChaos && mods.Any(x => x.Contains("ExpeditionRelicModifierDamageAddedAsChaos")) ||
                false;
     }
 
