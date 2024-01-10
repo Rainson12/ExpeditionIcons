@@ -155,6 +155,11 @@ public class ExpeditionIconsSettings : ISettings
 
     [Menu("Warn for bleed", parentIndex = 101)]
     public ToggleNode WarnBleed { get; set; } = new ToggleNode(false);
+    
+    [Menu("Warn for poison", parentIndex = 101)]
+    public ToggleNode WarnPoison { get; set; } = new ToggleNode(false);
+    [Menu("Warn for phys as chaos", parentIndex = 101)]
+    public ToggleNode WarnPhysicalAsExtraChaos { get; set; } = new ToggleNode(false);
 
     [Menu("Chest settings", index = 103, CollapsedByDefault = true)]
     [JsonIgnore]
