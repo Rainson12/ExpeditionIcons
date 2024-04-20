@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using ExileCore;
 using ExileCore.PoEMemory.Components;
@@ -11,6 +13,7 @@ using ExileCore.Shared.Enums;
 using ExileCore.Shared.Helpers;
 using ExileCore.Shared.Nodes;
 using GameOffsets.Native;
+using ImGuiNET;
 using SharpDX;
 using Vector2 = System.Numerics.Vector2;
 using Vector3 = System.Numerics.Vector3;
@@ -51,6 +54,7 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
     private bool _zoneCleared;
     private int[][] _pathfindingData;
     private Vector2i _areaDimensions;
+    private List<float> _scoreHistory = [];
 
     private Camera Camera => GameController.Game.IngameState.Camera;
 
@@ -112,6 +116,7 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
 
     private void StartSearch()
     {
+        _scoreHistory = [];
         _plannerRunner?.Stop();
         var plannerRunner = new PathPlannerRunner();
         plannerRunner.Start(Settings.PlannerSettings, PlannerEnvironment, GameController.SoundController);
@@ -125,6 +130,7 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
         {
             run.Stop();
             _plannerRunner = null;
+            _scoreHistory = [];
         }
     }
 
@@ -206,7 +212,7 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
         Settings.PlannerSettings.SearchState = _plannerRunner switch
         {
             { IsRunning: true } => SearchState.Searching,
-            { IsRunning: false, CurrentBestPath.Count: > 0 } => SearchState.Stopped,
+            { IsRunning: false, CurrentBestPath.PerPointScore.Count: > 0 } => SearchState.Stopped,
             _ => SearchState.Empty
         };
 
@@ -270,7 +276,7 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
 
         var negVec = new Vector2(-11.5f, -8.5f);
         var posVec = new Vector2(10.5f, 23.5f);
-        var rotations = (int)Math.Round(detonatorPos.Rotation/(MathF.PI/2));
+        var rotations = (int)Math.Round(detonatorPos.Rotation / (MathF.PI / 2));
         for (int i = 0; i < rotations; i++)
         {
             (negVec.X, negVec.Y, posVec.X, posVec.Y) = (-posVec.Y, negVec.X, -negVec.Y, posVec.X);
@@ -382,7 +388,7 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
             _explosiveRadius / GridToWorldMultiplier,
             ExpeditionInfo.TotalExplosiveCount,
             detonatorPos,
-            IsValidPlacement, 
+            IsValidPlacement,
             GetExclusionRect() ?? default,
             (GameController.IngameState.Data.MapStats?.GetValueOrDefault(GameStat.MapMinimapMainAreaRevealed) ?? 0) != 0);
     }
@@ -456,7 +462,7 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
                         {
                             var iconDescription = _metadataIconMapping.GetOrAdd(animatedMetaData,
                                 a => Icons.LogbookChestIcons.FirstOrDefault(icon =>
-                                        icon.BaseEntityMetadataSubstrings.Any(a.Contains)));
+                                    icon.BaseEntityMetadataSubstrings.Any(a.Contains)));
                             if (iconDescription != null)
                             {
                                 var settings = Settings.IconMapping.GetValueOrDefault(iconDescription.IconPickerIndex, new IconDisplaySettings());
@@ -550,13 +556,13 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
             }
         }
 
-        if (_plannerRunner?.CurrentBestPath is { Count: > 0 } path)
+        if (_plannerRunner?.CurrentBestPath is { PerPointScore: { Count: > 0 } path } score)
         {
             var firstPoint = DetonatorPos?.Pos ?? _playerGridPos;
             var prevPoint = firstPoint;
             for (var i = 0; i < path.Count; i++)
             {
-                var point = path[i];
+                var point = path[i].Point;
                 if (_largeMapOpen)
                 {
                     Graphics.DrawLine(GetMapScreenPosition(prevPoint), GetMapScreenPosition(point), 1, Settings.PlannerSettings.MapLineColor);
@@ -573,8 +579,23 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
                 }
             }
 
+            if (Settings.PlannerSettings.IsSearchRunning)
+            {
+                _scoreHistory.Add((float)score.TotalScore);
+            }
+
+            if (Settings.PlannerSettings.ShowScoreHistory &&
+                (Settings.PlannerSettings.IsSearchRunning || Settings.PlannerSettings.ShowScoreHistoryAfterSearchEnds) &&
+                ImGui.Begin("expedition_result_plot"))
+            {
+                ImGui.PlotLines("Score over time", ref CollectionsMarshal.AsSpan(_scoreHistory)[0], 
+                    _scoreHistory.Count, 0, "", 0, _scoreHistory.Max(),
+                    new Vector2(0, ImGui.GetContentRegionAvail().Y));
+                ImGui.End();
+            }
+
             DrawCirclesInWorld(
-                positions: path.Select(ExpandWithTerrainHeight).ToList(),
+                positions: path.Select(x => ExpandWithTerrainHeight(x.Point)).ToList(),
                 radius: _explosiveRadius,
                 color: Settings.PlannerSettings.ExplosiveColor.Value);
         }
@@ -662,8 +683,8 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
                                   _explosives2DPositions.Any(x => Vector2.Distance(x, worldPosition) < _explosiveRadius);
         var gridPosition = worldPosition.WorldToGrid();
         var isInPlannedExplosiveRadius = calculateExplosiveFrameDisplay &&
-                                         _plannerRunner?.CurrentBestPath is { Count: > 0 } path &&
-                                         path.Any(x => Vector2.Distance(x, gridPosition) < _explosiveRadius / GridToWorldMultiplier);
+                                         _plannerRunner?.CurrentBestPath is { PerPointScore.Count: > 0 } path &&
+                                         path.PerPointScore.Any(x => Vector2.Distance(x.Point, gridPosition) < _explosiveRadius / GridToWorldMultiplier);
 
         if (markCaptured)
         {
@@ -717,7 +738,13 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
         Boss,
     }
 
-    private record EntityCacheItem(string Path, Lazy<string> BaseAnimatedEntityMetadataCache, List<string> Mods, Vector3 Pos, Vector2 GridPos, float? RenderZ,
+    private record EntityCacheItem(
+        string Path,
+        Lazy<string> BaseAnimatedEntityMetadataCache,
+        List<string> Mods,
+        Vector3 Pos,
+        Vector2 GridPos,
+        float? RenderZ,
         float? RenderSize,
         bool? MinimapIconHide)
     {
