@@ -1,10 +1,10 @@
 ﻿using System;
-using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Windows.Forms;
 using ExileCore;
 using ExileCore.PoEMemory.Components;
 using ExileCore.PoEMemory.Elements;
@@ -18,6 +18,7 @@ using ImGuiNET;
 using SharpDX;
 using Vector2 = System.Numerics.Vector2;
 using Vector3 = System.Numerics.Vector3;
+using Vector4 = System.Numerics.Vector4;
 
 namespace ExpeditionIcons;
 
@@ -56,6 +57,10 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
     private int[][] _pathfindingData;
     private Vector2i _areaDimensions;
     private List<float> _scoreHistory = [];
+    private List<Vector2> _editedPath;
+    private int? _editedIndex = null;
+    private PathPlanner.DetailedLootScore _editedPathEval;
+    private PathPlanner.DetailedLootScore EditedOrNativeScore => _editedPathEval ?? _plannerRunner?.CurrentBestPath;
 
     private Camera Camera => GameController.Game.IngameState.Camera;
 
@@ -132,6 +137,9 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
             run.Stop();
             _plannerRunner = null;
             _scoreHistory = [];
+            _editedPath = null;
+            _editedIndex = null;
+            _editedPathEval = null;
         }
     }
 
@@ -139,6 +147,10 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
     {
         _plannerRunner?.Stop();
         _plannerRunner = null;
+        _scoreHistory = [];
+        _editedPath = null;
+        _editedIndex = null;
+        _editedPathEval = null;
         _detonatorPos = null;
         _cachedEntities.Clear();
         _zoneCleared = false;
@@ -557,8 +569,9 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
             }
         }
 
-        if (_plannerRunner?.CurrentBestPath is { PerPointScore: { Count: > 0 } path } score)
+        if (EditedOrNativeScore is { PerPointScore.Count: > 0 } score)
         {
+            var path = score.PerPointScore;
             var firstPoint = DetonatorPos?.Pos ?? _playerGridPos;
             var prevPoint = firstPoint;
             for (var i = 0; i < path.Count; i++)
@@ -585,21 +598,175 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
                 _scoreHistory.Add((float)score.TotalScore);
             }
 
-            if (Settings.PlannerSettings.ShowScoreHistory &&
-                (Settings.PlannerSettings.IsSearchRunning || Settings.PlannerSettings.ShowScoreHistoryAfterSearchEnds) &&
-                ImGui.Begin("expedition_result_plot"))
-            {
-                ImGui.PlotLines("Score over time", ref CollectionsMarshal.AsSpan(_scoreHistory)[0], 
-                    _scoreHistory.Count, 0, "", 0, _scoreHistory.Max(),
-                    new Vector2(0, ImGui.GetContentRegionAvail().Y));
-                ImGui.End();
-            }
+            ShowSearchWindow(score);
 
             DrawCirclesInWorld(
                 positions: path.Select(x => ExpandWithTerrainHeight(x.Point)).ToList(),
                 radius: _explosiveRadius,
                 color: Settings.PlannerSettings.ExplosiveColor.Value);
         }
+    }
+
+    private void ShowSearchWindow(PathPlanner.DetailedLootScore score)
+    {
+        if (Settings.PlannerSettings.ShowScoreHistory &&
+            (Settings.PlannerSettings.IsSearchRunning || Settings.PlannerSettings.ShowScoreHistoryAfterSearchEnds) &&
+            ImGui.Begin("Expedition planning result"))
+        {
+            if (ImGui.TreeNode("Detailed view"))
+            {
+                PathPlanner.DetailedLootScore scoreDiff = null;
+                if (_editedPath != null && _editedIndex is { } editedIndex)
+                {
+                    var pos = GameController.IngameState.ServerData.WorldMousePositionNum.WorldToGrid();
+                    var pp = new PathPlanner(Settings.PlannerSettings);
+                    pp.Init(score.Environment);
+                    var path = _editedPath.ToList();
+                    path[editedIndex] = pos;
+                    scoreDiff = pp.GetDetailedScore(path, score.Environment);
+                    DrawCirclesInWorld([ExpandWithTerrainHeight(pos)], _explosiveRadius, Color.LightBlue);
+                    Graphics.DrawLine(GetWorldScreenPosition(_editedPath[editedIndex]), GetWorldScreenPosition(pos), 1, Settings.PlannerSettings.WorldLineColor);
+
+                    if (Input.IsKeyDown(Settings.PlannerSettings.ConfirmEditorPlacementHotkey))
+                    {
+                        _editedPath[editedIndex] = pos;
+                        _editedPathEval = pp.GetDetailedScore(_editedPath, score.Environment);
+                        _editedIndex = null;
+                    }
+
+                    if (Input.IsKeyDown(Keys.Escape))
+                    {
+                        _editedIndex = null;
+                    }
+                }
+
+                if (ImGui.BeginTable("Change per explosive", 6, ImGuiTableFlags.Hideable | ImGuiTableFlags.Borders | ImGuiTableFlags.SizingStretchProp))
+                {
+                    ImGui.TableSetupColumn("Id");
+                    ImGui.TableSetupColumn("Running score");
+                    ImGui.TableSetupColumn("Score diff");
+                    ImGui.TableSetupColumn("New relic mods");
+                    ImGui.TableSetupColumn("New loot");
+                    ImGui.TableSetupColumn("Edit");
+                    ImGui.TableHeadersRow();
+
+                    var runningScore = 0.0;
+                    var runningScoreAfterDiff = 0.0;
+                    for (var i = 0; i < score.PerPointScore.Count; i++)
+                    {
+                        var perPointLootScore = score.PerPointScore[i];
+                        var diffOrOld = scoreDiff?.PerPointScore[i] ?? perPointLootScore;
+                        ImGui.TableNextRow();
+                        ImGui.PushID(i);
+                        ImGui.TableNextColumn();
+                        ImGui.Text($"{i,2}");
+                        ImGui.TableNextColumn();
+                        runningScore += perPointLootScore.ScoreDiff;
+                        if (scoreDiff != null)
+                        {
+                            runningScoreAfterDiff += scoreDiff.PerPointScore[i].ScoreDiff;
+                            ImGui.Text($"{runningScoreAfterDiff,7:F2}");
+                            var valueDiff = runningScoreAfterDiff - runningScore;
+                            if (valueDiff != 0)
+                            {
+                                ImGui.SameLine();
+                                ImGui.TextColored(GetCompareColor(runningScoreAfterDiff, runningScore), $"{valueDiff:(+0.00);(-0.00);''}");
+                            }
+                        }
+                        else
+                        {
+                            ImGui.Text($"{runningScore,7:F2}");
+                        }
+
+                        ImGui.TableNextColumn();
+                        ImGui.Text($"{diffOrOld.ScoreDiff,7:F2}");
+                        if (scoreDiff != null)
+                        {
+                            var valueDiff = scoreDiff.PerPointScore[i].ScoreDiff - perPointLootScore.ScoreDiff;
+                            if (valueDiff != 0)
+                            {
+                                ImGui.SameLine();
+                                ImGui.TextColored(
+                                    GetCompareColor(scoreDiff.PerPointScore[i].ScoreDiff, perPointLootScore.ScoreDiff),
+                                    $"{valueDiff:(+0.00);(-0.00);''}");
+                            }
+                        }
+
+                        ImGui.TableNextColumn();
+                        ImGui.Text($"{diffOrOld.NewRelics}");
+                        if (scoreDiff != null)
+                        {
+                            var valueDiff = scoreDiff.PerPointScore[i].NewRelics - perPointLootScore.NewRelics;
+                            if (valueDiff != 0)
+                            {
+                                ImGui.SameLine();
+                                ImGui.TextColored(
+                                    GetCompareColor(scoreDiff.PerPointScore[i].NewRelics, perPointLootScore.NewRelics),
+                                    $"{valueDiff:(+0);(-0);''}");
+                            }
+                        }
+
+                        ImGui.TableNextColumn();
+                        ImGui.Text($"{diffOrOld.Loot}");
+                        if (scoreDiff != null)
+                        {
+                            var valueDiff = scoreDiff.PerPointScore[i].Loot - perPointLootScore.Loot;
+                            if (valueDiff != 0)
+                            {
+                                ImGui.SameLine();
+                                ImGui.TextColored(
+                                    GetCompareColor(scoreDiff.PerPointScore[i].Loot, perPointLootScore.Loot),
+                                    $"{valueDiff:(+0);(-0);''}");
+                            }
+                        }
+
+                        ImGui.TableNextColumn();
+                        if (i == _editedIndex)
+                        {
+                            ImGui.PushStyleColor(ImGuiCol.Button, Color.Green.ToImguiVec4());
+                            if (ImGui.Button("Cancel"))
+                            {
+                                _editedIndex = null;
+                            }
+
+                            ImGui.PopStyleColor();
+                        }
+                        else if (ImGui.Button(" Edit "))
+                        {
+                            _editedPath ??= score.PerPointScore.Select(x => x.Point).ToList();
+                            var pp = new PathPlanner(Settings.PlannerSettings);
+                            pp.Init(score.Environment);
+                            _editedPathEval = pp.GetDetailedScore(_editedPath, score.Environment);
+                            _editedIndex = i;
+                        }
+
+                        ImGui.PopID();
+                    }
+
+                    ImGui.EndTable();
+                }
+
+                if (_editedPath != null && ImGui.Button("Reset edited path"))
+                {
+                    _editedIndex = null;
+                    _editedPath = null;
+                    _editedPathEval = null;
+                }
+            }
+
+            ImGui.PlotLines("Score over time", ref CollectionsMarshal.AsSpan(_scoreHistory)[0],
+                _scoreHistory.Count, 0, "", 0, _scoreHistory.Max(),
+                new Vector2(0, ImGui.GetContentRegionAvail().Y));
+            ImGui.End();
+        }
+    }
+
+    private static Vector4 GetCompareColor(double @new, double old)
+    {
+        return @new.CompareTo(old) switch
+        {
+            > 0 => Color.Green.ToImguiVec4(), 0 => Color.White.ToImguiVec4(), < 0 => Color.Red.ToImguiVec4()
+        };
     }
 
     private bool ContainsWarnMods(List<string> mods)
@@ -684,7 +851,7 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
                                   _explosives2DPositions.Any(x => Vector2.Distance(x, worldPosition) < _explosiveRadius);
         var gridPosition = worldPosition.WorldToGrid();
         var isInPlannedExplosiveRadius = calculateExplosiveFrameDisplay &&
-                                         _plannerRunner?.CurrentBestPath is { PerPointScore.Count: > 0 } path &&
+                                         EditedOrNativeScore is { PerPointScore.Count: > 0 } path &&
                                          path.PerPointScore.Any(x => Vector2.Distance(x.Point, gridPosition) < _explosiveRadius / GridToWorldMultiplier);
 
         if (markCaptured)

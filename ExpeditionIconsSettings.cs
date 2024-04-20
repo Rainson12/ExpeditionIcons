@@ -381,6 +381,7 @@ public class PlannerSettings
     public HotkeyNode StartSearchHotkey { get; set; } = new HotkeyNode(Keys.F13);
     public HotkeyNode StopSearchHotkey { get; set; } = new HotkeyNode(Keys.F13);
     public HotkeyNode ClearSearchHotkey { get; set; } = new HotkeyNode(Keys.F13);
+    public HotkeyNode ConfirmEditorPlacementHotkey { get; set; } = new HotkeyNode(Keys.Enter);
 
     [JsonIgnore]
     [ConditionalDisplay(nameof(IsSearchRunning), false)]

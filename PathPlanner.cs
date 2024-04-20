@@ -11,7 +11,7 @@ public class PathPlanner
 {
     public record PerPointLootScore(Vector2 Point, double ScoreDiff, int NewRelics, int Loot);
 
-    public record DetailedLootScore(List<PerPointLootScore> PerPointScore, double TotalScore);
+    public record DetailedLootScore(List<PerPointLootScore> PerPointScore, double TotalScore, ExpeditionEnvironment Environment);
 
     private readonly Dictionary<object, double> _lootValueTable = new(ReferenceEqualityComparer.Instance);
     private readonly PlannerSettings _settings;
@@ -83,7 +83,7 @@ public class PathPlanner
             score += localScore;
         }
 
-        return new DetailedLootScore(scorePerPoint, score);
+        return new DetailedLootScore(scorePerPoint, score, environment);
     }
 
     private Vector2 GetNextPosition(Vector2 position, Vector2 previousPosition, float radius, ExpeditionEnvironment environment)
