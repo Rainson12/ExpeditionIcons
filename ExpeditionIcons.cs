@@ -12,6 +12,7 @@ using ExileCore.PoEMemory.MemoryObjects;
 using ExileCore.Shared.Enums;
 using ExileCore.Shared.Helpers;
 using ExileCore.Shared.Nodes;
+using ExpeditionIcons.PathPlannerData;
 using GameOffsets.Native;
 using ImGuiNET;
 using SharpDX;
@@ -316,7 +317,7 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
                                     icon.BaseEntityMetadataSubstrings.Any(a.Contains)));
                             if (iconDescription != null)
                             {
-                                loot.Add((e.GridPos, new Chest(iconDescription.IconPickerIndex)));
+                                loot.Add((e.GridPos, new PathPlannerData.Chest(iconDescription.IconPickerIndex)));
                             }
                         }
                     }
@@ -363,7 +364,7 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
 
                     for (int i = 0; i < Settings.PlannerSettings.LogbookCaveArtifactChestMultiplier; i++)
                     {
-                        loot.Add((e.GridPos, new Chest(IconPickerIndex.LeagueChest)));
+                        loot.Add((e.GridPos, new PathPlannerData.Chest(IconPickerIndex.LeagueChest)));
                     }
 
                     break;

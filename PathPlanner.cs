@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using ExileCore.Shared.Helpers;
+using ExpeditionIcons.PathPlannerData;
 
 namespace ExpeditionIcons;
 
@@ -96,7 +97,7 @@ public class PathPlanner
         return previousPosition.DistanceLessThanOrEqual(position, environment.ExplosionRange) &&
                Vector2.Clamp(position, environment.ExclusionArea.Min, environment.ExclusionArea.Max) != position &&
                Enumerable.Range(1, _validatedPoints)
-                   .Select(i => i / (float)(_validatedPoints))
+                   .Select(i => i / (float)_validatedPoints)
                    .Select(l => Vector2.Lerp(previousPosition, position, l))
                    .All(environment.IsValidPlacement);
     }
@@ -330,96 +331,4 @@ public class PathPlanner
 
         return path;
     }
-}
-
-public record PathState(List<Vector2> Points, double Score);
-
-public record ExpeditionEnvironment(
-    List<(Vector2, IExpeditionRelic)> Relics,
-    List<(Vector2, IExpeditionLoot)> Loot,
-    float ExplosionRange,
-    float ExplosionRadius,
-    int MaxExplosions,
-    Vector2 StartingPoint,
-    Func<Vector2, bool> IsValidPlacement,
-    (Vector2 Min, Vector2 Max) ExclusionArea,
-    bool IsLogbook);
-
-public interface IExpeditionRelic
-{
-    public (double, double) GetScoreMultiplier(IExpeditionLoot loot);
-}
-
-public record DoubledMonstersRelic : IExpeditionRelic
-{
-    public (double, double) GetScoreMultiplier(IExpeditionLoot loot)
-    {
-        if (loot is RunicMonster)
-        {
-            return (2, 0);
-        }
-
-        return (1, 0);
-    }
-}
-
-public record WarningRelic : IExpeditionRelic
-{
-    public (double, double) GetScoreMultiplier(IExpeditionLoot loot)
-    {
-        return (0, 0);
-    }
-}
-
-public class ConfigurableRelic : IExpeditionRelic
-{
-    private readonly double _multiplier;
-    private readonly double _increase;
-    private readonly bool _isMonsterRelic;
-
-    public ConfigurableRelic(double multiplier, double increase, bool isMonsterRelic)
-    {
-        _multiplier = multiplier;
-        _increase = increase;
-        _isMonsterRelic = isMonsterRelic;
-    }
-
-    public (double, double) GetScoreMultiplier(IExpeditionLoot loot)
-    {
-        return (_isMonsterRelic, loot) switch
-        {
-            (true, IMonster) or (false, IChest) => (_multiplier, _increase),
-            _ => (1, 0),
-        };
-    }
-}
-
-public interface IExpeditionLoot
-{
-}
-
-public interface IChest : IExpeditionLoot
-{
-}
-
-public interface IMonster : IExpeditionLoot
-{
-}
-
-public class RunicMonster : IMonster
-{
-}
-
-public class NormalMonster : IMonster
-{
-}
-
-public class Chest : IChest
-{
-    public Chest(IconPickerIndex type)
-    {
-        Type = type;
-    }
-
-    public IconPickerIndex Type { get; }
 }
