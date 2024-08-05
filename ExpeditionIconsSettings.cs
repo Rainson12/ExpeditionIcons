@@ -381,6 +381,7 @@ public class PlannerSettings
     public HotkeyNode StartSearchHotkey { get; set; } = new HotkeyNode(Keys.F13);
     public HotkeyNode StopSearchHotkey { get; set; } = new HotkeyNode(Keys.F13);
     public HotkeyNode ClearSearchHotkey { get; set; } = new HotkeyNode(Keys.F13);
+    public HotkeyNode ConfirmEditorPlacementHotkey { get; set; } = new HotkeyNode(Keys.Enter);
 
     [JsonIgnore]
     [ConditionalDisplay(nameof(IsSearchRunning), false)]
@@ -438,6 +439,9 @@ public class PlannerSettings
     public RangeNode<int> LogbookCaveRunicMonsterMultiplier { get; set; } = new RangeNode<int>(3, 0, 10);
     public RangeNode<int> LogbookCaveArtifactChestMultiplier { get; set; } = new RangeNode<int>(3, 0, 10);
     public RangeNode<int> LogbookBossRunicMonsterMultiplier { get; set; } = new RangeNode<int>(10, 0, 20);
+
+    public ToggleNode ShowScoreHistory { get; set; } = new ToggleNode(false);
+    public ToggleNode ShowScoreHistoryAfterSearchEnds { get; set; } = new ToggleNode(false);
 
     internal bool HasSearchResult => SearchState != SearchState.Empty;
     internal bool IsSearchRunning => SearchState == SearchState.Searching;

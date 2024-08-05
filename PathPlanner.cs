@@ -3,11 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using ExileCore.Shared.Helpers;
+using ExpeditionIcons.PathPlannerData;
 
 namespace ExpeditionIcons;
 
 public class PathPlanner
 {
+    public record PerPointLootScore(Vector2 Point, double ScoreDiff, int NewRelics, int Loot);
+
+    public record DetailedLootScore(List<PerPointLootScore> PerPointScore, double TotalScore, ExpeditionEnvironment Environment);
+
     private readonly Dictionary<object, double> _lootValueTable = new(ReferenceEqualityComparer.Instance);
     private readonly PlannerSettings _settings;
     private readonly int _validatedPoints;
@@ -30,16 +35,55 @@ public class PathPlanner
                 relics.Add(relic);
             }
 
+            var localScore = 0.0;
             foreach (var (_, loot) in environment.Loot
                          .Where(x => x.Item1.DistanceLessThanOrEqual(explosionPoint, environment.ExplosionRadius))
                          .Where(x => lootList.Add(x.Item2)))
             {
                 var (multiplier, sum) = relics.Select(x => x.GetScoreMultiplier(loot)).Aggregate((mult: 1.0, sum: 0.0), (a, b) => (a.mult * b.Item1, a.sum + b.Item2));
-                score += _lootValueTable[loot] * multiplier * (1 + sum);
+                localScore += _lootValueTable[loot] * multiplier * (1 + sum);
             }
+
+            score += localScore;
         }
 
         return score;
+    }
+
+    //Sync with method above
+    public DetailedLootScore GetDetailedScore(List<Vector2> state, ExpeditionEnvironment environment)
+    {
+        var relics = new HashSet<IExpeditionRelic>();
+        var lootList = new HashSet<IExpeditionLoot>();
+        var scorePerPoint = new List<PerPointLootScore>();
+        var score = 0.0;
+        foreach (var explosionPoint in state)
+        {
+            var newRelics = 0;
+            var newLoot = 0;
+            foreach (var (_, relic) in environment.Relics.Where(x => x.Item1.Distance(explosionPoint) <= environment.ExplosionRadius))
+            {
+                if (relics.Add(relic))
+                {
+                    newRelics++;
+                }
+            }
+
+            var localScore = 0.0;
+            foreach (var (_, loot) in environment.Loot
+                         .Where(x => x.Item1.DistanceLessThanOrEqual(explosionPoint, environment.ExplosionRadius))
+                         .Where(x => lootList.Add(x.Item2)))
+            {
+                newLoot++;
+                var (multiplier, sum) = relics.Select(x => x.GetScoreMultiplier(loot)).Aggregate((mult: 1.0, sum: 0.0), (a, b) => (a.mult * b.Item1, a.sum + b.Item2));
+                localScore += _lootValueTable[loot] * multiplier * (1 + sum);
+            }
+
+            scorePerPoint.Add(new PerPointLootScore(explosionPoint, localScore, newRelics, newLoot));
+            score += localScore;
+        }
+
+        return new DetailedLootScore(scorePerPoint, score, environment);
     }
 
     private Vector2 GetNextPosition(Vector2 position, Vector2 previousPosition, float radius, ExpeditionEnvironment environment)
@@ -53,7 +97,7 @@ public class PathPlanner
         return previousPosition.DistanceLessThanOrEqual(position, environment.ExplosionRange) &&
                Vector2.Clamp(position, environment.ExclusionArea.Min, environment.ExclusionArea.Max) != position &&
                Enumerable.Range(1, _validatedPoints)
-                   .Select(i => i / (float)(_validatedPoints))
+                   .Select(i => i / (float)_validatedPoints)
                    .Select(l => Vector2.Lerp(previousPosition, position, l))
                    .All(environment.IsValidPlacement);
     }
@@ -69,11 +113,12 @@ public class PathPlanner
         while (!roundedPoint.DistanceLessThanOrEqual(position, radius))
         {
             var diff = roundedPoint - position;
-            var maxDiffComponent = Math.Abs(diff.X) > Math.Abs(diff.Y) 
-                ? new Vector2(Math.Sign(diff.X), 0) 
+            var maxDiffComponent = Math.Abs(diff.X) > Math.Abs(diff.Y)
+                ? new Vector2(Math.Sign(diff.X), 0)
                 : new Vector2(0, Math.Sign(diff.Y));
             roundedPoint -= maxDiffComponent;
         }
+
         return roundedPoint;
     }
 
@@ -198,6 +243,22 @@ public class PathPlanner
         return false;
     }
 
+    public void Init(ExpeditionEnvironment environment)
+    {
+        _lootValueTable.Clear();
+        foreach (var (_, loot) in environment.Loot)
+        {
+            _lootValueTable[loot] = loot switch
+            {
+                RunicMonster => environment.IsLogbook ? _settings.RunicMonsterLogbookWeight : _settings.RunicMonsterWeight,
+                Chest { Type: var type } => _settings.ChestSettingsMap.GetValueOrDefault(type, new ChestSettings()).Weight,
+                NormalMonster => _settings.NormalMonsterWeight,
+            };
+        }
+
+        _lootValueTable.TrimExcess();
+    }
+
     public IEnumerable<PathState> GetBestPathSeries(ExpeditionEnvironment environment)
     {
         if (environment.MaxExplosions <= 0)
@@ -234,18 +295,6 @@ public class PathPlanner
 
     private List<Vector2> BuildPath(ExpeditionEnvironment environment)
     {
-        _lootValueTable.Clear();
-        foreach (var (_, loot) in environment.Loot)
-        {
-            _lootValueTable[loot] = loot switch
-            {
-                RunicMonster => environment.IsLogbook ? _settings.RunicMonsterLogbookWeight : _settings.RunicMonsterWeight,
-                Chest { Type: var type } => _settings.ChestSettingsMap.GetValueOrDefault(type, new ChestSettings()).Weight,
-                NormalMonster => _settings.NormalMonsterWeight,
-            };
-            _lootValueTable.TrimExcess();
-        }
-
         var path = new List<Vector2>(environment.MaxExplosions);
         if (Random.Shared.Next(2) != 0 && environment.Relics.Any())
         {
@@ -282,88 +331,4 @@ public class PathPlanner
 
         return path;
     }
-}
-
-public record PathState(List<Vector2> Points, double Score);
-
-public record ExpeditionEnvironment(List<(Vector2, IExpeditionRelic)> Relics, List<(Vector2, IExpeditionLoot)> Loot, float ExplosionRange, float ExplosionRadius,
-    int MaxExplosions, Vector2 StartingPoint, Func<Vector2, bool> IsValidPlacement, (Vector2 Min, Vector2 Max) ExclusionArea, bool IsLogbook);
-
-public interface IExpeditionRelic
-{
-    public (double, double) GetScoreMultiplier(IExpeditionLoot loot);
-}
-
-public record DoubledMonstersRelic : IExpeditionRelic
-{
-    public (double, double) GetScoreMultiplier(IExpeditionLoot loot)
-    {
-        if (loot is RunicMonster)
-        {
-            return (2, 0);
-        }
-
-        return (1, 0);
-    }
-}
-
-public record WarningRelic : IExpeditionRelic
-{
-    public (double, double) GetScoreMultiplier(IExpeditionLoot loot)
-    {
-        return (0, 0);
-    }
-}
-
-public class ConfigurableRelic : IExpeditionRelic
-{
-    private readonly double _multiplier;
-    private readonly double _increase;
-    private readonly bool _isMonsterRelic;
-
-    public ConfigurableRelic(double multiplier, double increase, bool isMonsterRelic)
-    {
-        _multiplier = multiplier;
-        _increase = increase;
-        _isMonsterRelic = isMonsterRelic;
-    }
-
-    public (double, double) GetScoreMultiplier(IExpeditionLoot loot)
-    {
-        return (_isMonsterRelic, loot) switch
-        {
-            (true, IMonster) or (false, IChest) => (_multiplier, _increase),
-            _ => (1, 0),
-        };
-    }
-}
-
-public interface IExpeditionLoot
-{
-}
-
-public interface IChest : IExpeditionLoot
-{
-}
-
-public interface IMonster : IExpeditionLoot
-{
-}
-
-public class RunicMonster : IMonster
-{
-}
-
-public class NormalMonster : IMonster
-{
-}
-
-public class Chest : IChest
-{
-    public Chest(IconPickerIndex type)
-    {
-        Type = type;
-    }
-
-    public IconPickerIndex Type { get; }
 }
