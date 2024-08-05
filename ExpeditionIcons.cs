@@ -160,9 +160,14 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
     {
         const int segments = 90;
         const int segmentSpan = 360 / segments;
-        var playerPos = GameController.Player.GetComponent<Positioned>().WorldPosNum;
+        var playerPos = GameController.Player?.GetComponent<Positioned>()?.WorldPosNum;
+        if (playerPos == null)
+        {
+            return;
+        }
+
         foreach (var position in positions
-                     .Where(x => playerPos.Distance(new Vector2(x.X, x.Y)) < 80 * GridToWorldMultiplier + radius))
+                     .Where(x => playerPos.Value.Distance(new Vector2(x.X, x.Y)) < 80 * GridToWorldMultiplier + radius))
         {
             foreach (var segmentId in Enumerable.Range(0, segments))
             {
@@ -206,7 +211,13 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
         };
 
         var detonatorPos = DetonatorPos;
-        _playerGridPos = GameController.Player.GetComponent<Positioned>().WorldPosNum.WorldToGrid();
+        var playerGridPos = GameController.Player?.GetComponent<Positioned>()?.WorldPosNum.WorldToGrid();
+        if (playerGridPos == null)
+        {
+            return null;
+        }
+
+        _playerGridPos = playerGridPos.Value;
         if (detonatorPos is { Pos: var dp } && _playerGridPos.Distance(dp) < 90)
         {
             _zoneCleared = DetonatorEntity?.IsTargetable != true;
@@ -592,6 +603,8 @@ public class ExpeditionIcons : BaseSettingsPlugin<ExpeditionIconsSettings>
                Settings.WarnReducedDamageTaken && mods.Any(x => x.Contains("ExpeditionRelicModifierReducedDamageTaken")) ||
                Settings.WarnBleed && mods.Any(x => x.Contains("ExpeditionRelicModifierBleedOnHitBleedDuration")) ||
                Settings.WarnCorrupted && mods.Any(x => x.Contains("ExpeditionRelicModifierExpeditionCorruptedItemsElite")) ||
+               Settings.WarnPoison && mods.Any(x => x.Contains("ExpeditionRelicModifierAllDamagePoisonsPoisonDuration")) ||
+               Settings.WarnPhysicalAsExtraChaos && mods.Any(x => x.Contains("ExpeditionRelicModifierDamageAddedAsChaos")) ||
                false;
     }
 
